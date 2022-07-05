@@ -1,0 +1,19 @@
+{
+  "name": "forms",
+  "private": true,
+  "version": "0.0.1",
+  "author": "Pavlos Georgiou",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn lerna run --parallel --stream build",
+    "build:watch": "yarn lerna run --parallel --stream dev",
+    "dev": "yarn build:watch"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "lerna": "^4.0.0",
+    "typescript": "^4.6.2"
+  }
+}
