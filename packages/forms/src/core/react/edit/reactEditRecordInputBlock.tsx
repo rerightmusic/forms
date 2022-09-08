@@ -6,7 +6,8 @@ import { TextError } from '../../../error';
 import { Either } from 'fp-ts/lib/Either';
 import _ from 'lodash';
 import { NextRouter, useRouter } from 'next/router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useFooter } from '../../../layout/footer';
 import { useLeavePageConfirm } from '../../../window/leavePage';
 import { InputState } from '../../inputBlock';
 import { getPartial } from '../../record/recordBlockBuilder';
@@ -14,7 +15,6 @@ import { RecordPartial, RecordPartialState, RecordState } from '../../record/rec
 import { RecordInputBlock, RecordNestedInputBlock } from '../../record/recordInputBlock';
 import { withError } from '../../validator';
 import { addSpacing, withBreak } from '../layout';
-import { useFooter } from '../../../layout/footer';
 import { reactDateInputBlock } from './reactDateInputBlock';
 import { reactDurationInputBlock } from './reactDurationInputBlock';
 import { reactListInputBlock } from './reactListInputBlock';
@@ -27,6 +27,13 @@ import { reactTextInputBlock } from './reactTextInputBlock';
 import { reactToggleInputBlock } from './reactToggleInputBlock';
 import { reactValueInputBlock } from './reactValueInputBlock';
 
+export type SubmitProps<V> = {
+  alwaysEnabled?: boolean;
+  onSubmit: (v: V, edited: Partial<V>, reset: () => void) => Promise<Either<string, any>>;
+  label?: string;
+  footer: boolean;
+};
+
 const ReactEditRecordInputBlock = <R, S extends any[], V>(
   block: RecordNestedInputBlock<R, S, V>
 ) => {
@@ -34,17 +41,14 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
     props: {
       title?: string;
       value?: RecordPartial<S>;
-      submitAlwaysEnabled?: boolean;
-      onSubmit?: (v: V, edited: Partial<V>, reset: () => void) => Promise<Either<string, any>>;
+      submit?: SubmitProps<V>;
       onChange?: (s: RecordState<S, V>, p: RecordPartial<S>, v: V | null) => void;
       clearButton?: boolean;
       onClear?: () => void;
-      submitLabel?: string;
-      inlineSubmit?: boolean;
       sx?: SxProps<Theme>;
     } & R
   ) {
-    const { value, onSubmit, inlineSubmit, ...other } = props;
+    const { value, submit, ...other } = props;
     const setFooter = useFooter();
     const router = useRouter();
     const theme = useTheme();
@@ -53,7 +57,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       () =>
         block.apply.calculateState({
           req: other as any,
-          get: null,
+          state: null,
           seed: value || null,
         }),
       []
@@ -77,7 +81,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
           ...s,
           data: block.apply.calculateState({
             req: other as any,
-            get: null,
+            state: null,
             seed: { ...getPartial(s.data), ...(value || null) },
           }),
           prevValue: value,
@@ -91,7 +95,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       const queryData = getQueryData(router);
       const initialState = block.apply.calculateState({
         req: other as any,
-        get: null,
+        state: null,
         seed: value ? { ...(queryData as any), ...value } : queryData,
       });
 
@@ -120,11 +124,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       };
     }, []);
 
-    const inlineSubmitButton = inlineSubmit || !setFooter;
-
-    const submitButton = (
-      onSubmit: (v: V, edited: Partial<V>, reset: () => void) => Promise<Either<string, any>>
-    ) => {
+    const submitButton = (submit: SubmitProps<V>) => {
       let err = '';
       if (state.data.valid._tag === 'Left') {
         err = withError(state.data.valid, state.data.edited);
@@ -133,113 +133,117 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
         <Box
           sx={{
             display: 'flex',
-            ...(inlineSubmitButton
-              ? { flexDirection: 'column-reverse', alignItems: 'start' }
-              : { flexDirection: 'row', alignItems: 'center' }),
+            ...(submit?.footer === true
+              ? { flexDirection: 'row', alignItems: 'center' }
+              : { flexDirection: 'column-reverse', alignItems: 'start' }),
           }}
         >
           {err && (
-            <TextError sx={inlineSubmitButton ? { mt: '10px' } : { mr: '10px' }}>{err}</TextError>
+            <TextError sx={submit?.footer === true ? { mr: '10px' } : { mt: '10px' }}>
+              {err}
+            </TextError>
           )}
           {state.data.valid._tag !== 'Left' && state.submissionState.error && (
-            <TextError sx={inlineSubmitButton ? { mt: '10px' } : { mr: '10px' }}>
+            <TextError sx={submit?.footer === true ? { mr: '10px' } : { mt: '10px' }}>
               {state.submissionState.error}
             </TextError>
           )}
-          {state.submissionState.success && !state.data.edited && (
+          {submit.footer === true && state.submissionState.success && !state.data.edited && (
             <Typography
               sx={theme =>
-                inlineSubmitButton
-                  ? {
+                submit?.footer === true
+                  ? { mr: '10px', color: theme.palette.success.main }
+                  : {
                       mt: '10px',
                       color: theme.palette.success.main,
                       width: '160px',
                       textAlign: 'center',
                     }
-                  : { mr: '10px', color: theme.palette.success.main }
               }
             >
-              Saved!
+              Success!
             </Typography>
           )}
-          <LoadingButton
-            loading={state.loading}
-            disabled={
-              props.submitAlwaysEnabled === true
-                ? false
-                : state.loading || !state.data.edited || state.data.valid._tag === 'Left'
-            }
-            sx={{ paddingX: '40px', minWidth: '160px' }}
-            variant="contained"
-            onClick={() => {
-              if (state.data.valid._tag === 'Right') {
-                setState(s => ({
-                  ...s,
-                  loading: true,
-                  submissionState: { ...s.submissionState, error: '' },
-                }));
-                onSubmit(state.data.valid.right, getValidEdited(state.data), () =>
-                  setState(s => ({ ...s, data: initialState }))
-                )
-                  .then(res => {
-                    if (state.mounted) {
-                      setState(s => {
-                        return {
+          <Box>
+            <LoadingButton
+              loading={state.loading}
+              disabled={
+                submit?.alwaysEnabled === true
+                  ? false
+                  : state.loading || !state.data.edited || state.data.valid._tag === 'Left'
+              }
+              sx={{ paddingX: '40px', minWidth: '160px' }}
+              variant="contained"
+              onClick={() => {
+                if (state.data.valid._tag === 'Right') {
+                  setState(s => ({
+                    ...s,
+                    loading: true,
+                    submissionState: { ...s.submissionState, error: '' },
+                  }));
+                  submit
+                    .onSubmit(state.data.valid.right, getValidEdited(state.data), () =>
+                      setState(s => ({ ...s, data: initialState }))
+                    )
+                    .then(res => {
+                      if (state.mounted) {
+                        setState(s => {
+                          return {
+                            ...s,
+                            loading: false,
+                            data: {
+                              ...s.data,
+                              edited: res._tag === 'Right' ? false : s.data.edited,
+                            },
+                            submissionState: {
+                              success: res._tag === 'Right',
+                              error: res._tag === 'Left' ? res.left : '',
+                            },
+                          };
+                        });
+                      }
+                    })
+                    .catch(_ => {
+                      if (state.mounted)
+                        setState(s => ({
                           ...s,
                           loading: false,
-                          data: {
-                            ...s.data,
-                            edited: res._tag === 'Right' ? false : s.data.edited,
-                          },
-                          submissionState: {
-                            success: res._tag === 'Right',
-                            error: res._tag === 'Left' ? res.left : '',
-                          },
-                        };
-                      });
-                    }
-                  })
-                  .catch(_ => {
-                    if (state.mounted)
-                      setState(s => ({
-                        ...s,
-                        loading: false,
-                        submissionState: { error: 'Something went wrong', success: false },
-                      }));
-                  });
-              }
-            }}
-          >
-            {props.submitLabel || 'Save'}
-          </LoadingButton>
-          {props.clearButton === true && (
-            <Button
-              sx={{ ml: '10px', minWidth: '100px' }}
-              onClick={() => {
-                setState(s => ({
-                  ...s,
-                  data: block.apply.calculateState({
-                    req: other as any,
-                    get: null,
-                    seed: null,
-                  }),
-                }));
-                props.onClear && props.onClear();
+                          submissionState: { error: 'Something went wrong', success: false },
+                        }));
+                    });
+                }
               }}
             >
-              Clear
-            </Button>
-          )}
+              {submit?.label || 'Save'}
+            </LoadingButton>
+            {props.clearButton === true && (
+              <Button
+                sx={{ minWidth: '100px' }}
+                onClick={() => {
+                  setState(s => ({
+                    ...s,
+                    data: block.apply.calculateState({
+                      req: other as any,
+                      state: null,
+                      seed: null,
+                    }),
+                  }));
+                  props.onClear && props.onClear();
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </Box>
         </Box>
       );
     };
 
     useEffect(() => {
-      setFooter &&
-        !inlineSubmitButton &&
-        onSubmit &&
+      submit &&
+        submit.footer === true &&
         setFooter({
-          footer: submitButton(onSubmit),
+          footer: submitButton(submit),
           opts: {
             borderColor: state.submissionState.error
               ? theme.palette.error.main
@@ -260,7 +264,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
           </Typography>
         )}
         {recordBlock(rec, theme)}
-        {inlineSubmitButton && onSubmit && <Box sx={{ my: '30px' }}>{submitButton(onSubmit)}</Box>}
+        {submit && submit.footer !== true && <Box sx={{ mt: '30px' }}>{submitButton(submit)}</Box>}
       </Box>
     );
   };
@@ -365,7 +369,7 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
         return reactSelectInputBlock(b, idx);
 
       case 'MultiSelectInputBlock':
-        return reactMultiSelectInputBlock(b, idx, theme);
+        return reactMultiSelectInputBlock(b, idx);
 
       case 'ValueInputBlock':
         return reactValueInputBlock(b, idx);
@@ -396,6 +400,18 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
           <Typography sx={{ fontSize: '15px', color: 'gray' }}>{b.text}</Typography>,
           {
             my: '10px',
+          }
+        );
+
+      case 'Button':
+        return addSpacing(
+          idx,
+          <Button variant="text" onClick={b.onClick} color="secondary" size="small">
+            {b.label}
+          </Button>,
+          {
+            display: 'flex',
+            alignItems: 'center',
           }
         );
 

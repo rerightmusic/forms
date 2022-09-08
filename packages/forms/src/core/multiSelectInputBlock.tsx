@@ -4,14 +4,16 @@ import { NestedInputBlock } from './inputBlock';
 import { invalid, Validator, withError } from './validator';
 
 export function multiSelect<R, Req extends boolean, V>(
-  label: Dynamic<string[] | null, string>,
-  options: Dynamic<string[] | null, Option[]>,
+  label: Dynamic<SelectedOption[] | null, string>,
+  options: Dynamic<SelectedOption[] | null, Option[]>,
   validate: Dynamic<
-    string[] | null,
-    (v: Validator<false, string[] | null, string[] | null>) => Validator<Req, string[] | null, V>
+    SelectedOption[] | null,
+    (
+      v: Validator<false, SelectedOption[] | null, SelectedOption[] | null>
+    ) => Validator<Req, SelectedOption[] | null, V>
   >,
   opts?: Dynamic<
-    string[] | null,
+    SelectedOption[] | null,
     {
       readonly?: boolean;
       dropdown?: boolean;
@@ -21,10 +23,17 @@ export function multiSelect<R, Req extends boolean, V>(
       maxItems?: number;
     }
   >
-): NestedInputBlock<R, Req, string[] | null, string[] | null, V, MultiSelectInputBlock> {
-  const getValidation = (prov: string[] | null) => {
+): NestedInputBlock<
+  R,
+  Req,
+  SelectedOption[] | null,
+  SelectedOption[] | string[] | null,
+  V,
+  MultiSelectInputBlock
+> {
+  const getValidation = (prov: SelectedOption[] | null) => {
     const opts_ = opts && fromDyn(prov, opts);
-    return new Validator<false, string[] | null, string[] | null>(
+    return new Validator<false, SelectedOption[] | null, SelectedOption[] | null>(
       false,
       v => right(v),
       p => p === null
@@ -43,17 +52,23 @@ export function multiSelect<R, Req extends boolean, V>(
       .chain(fromDyn(prov, validate));
   };
 
+  const toSelectedOptions = (s: SelectedOption[] | string[] | null) => {
+    if (!s) return s;
+    return s.map(x => (typeof x === 'string' ? { value: x } : x));
+  };
+
   return new NestedInputBlock({
-    calculateState: ({ get, seed }) => {
-      const validation = getValidation(get?.partialState || seed);
-      const opts_ = opts && fromDyn(get?.partialState || seed, opts);
+    calculateState: ({ state, seed }) => {
+      const seed_ = toSelectedOptions(seed);
+      const validation = getValidation(state?.get.partialState || seed_);
+      const opts_ = opts && fromDyn(state?.get.partialState || seed_, opts);
       return {
         tag: 'InputState',
-        partialState: get?.partialState || seed || validation._default,
+        partialState: state?.get.partialState || seed_ || validation._default,
         ignore: opts_?.ignore,
         visible: opts_?.visible,
-        edited: get?.edited || false,
-        valid: validation.validate(get?.partialState || seed || validation._default),
+        edited: state?.get.edited || false,
+        valid: validation.validate(state?.get.partialState || seed_ || validation._default),
       };
     },
     block: ({ get, set }) => {
@@ -69,7 +84,7 @@ export function multiSelect<R, Req extends boolean, V>(
         value: get.partialState || null,
         required: validation._required,
         error: withError(validation.validate(get.partialState), get.edited),
-        onChange: (v: string[]) => {
+        onChange: (v: SelectedOption[]) => {
           const validation = getValidation(v);
           set({
             ...get,
@@ -86,17 +101,23 @@ export function multiSelect<R, Req extends boolean, V>(
 
 export type Option = {
   name: string;
+  subOptions?: Option[];
+  value: string;
+};
+
+export type SelectedOption = {
+  subOptions?: SelectedOption[];
   value: string;
 };
 
 export type MultiSelectInputBlock = {
   tag: 'MultiSelectInputBlock';
-  onChange: (v: string[]) => void;
+  onChange: (v: SelectedOption[]) => void;
   options: Option[];
   required: boolean;
   error: string;
   label: string;
-  value: string[] | null;
+  value: SelectedOption[] | null;
   visible?: boolean;
   readonly?: boolean;
   dropdown?: boolean;

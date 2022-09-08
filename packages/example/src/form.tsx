@@ -1,7 +1,7 @@
-import * as F from 'forms';
 import { left, right } from 'fp-ts/lib/Either';
+import * as F from 'forms';
 
-export const Form = F.create()
+const Form = F.create()
   .require<{ client: 'client' }>()
   .expect<{ surname: [string, string] }>()
   .add(
@@ -176,7 +176,60 @@ export const Form = F.create()
     F.multiSelect(
       'MultiSelect',
       [
-        { name: 'Option A', value: 'optionA' },
+        {
+          name: 'Option A',
+          value: 'optionA',
+          subOptions: [
+            {
+              name: 'Option A 1',
+              value: 'optionA1',
+              subOptions: [{ name: 'Option A 1 1', value: 'optionA11' }],
+            },
+            { name: 'Option A 2', value: 'optionA2' },
+            { name: 'Option A 3', value: 'optionA3' },
+            { name: 'Option A 4', value: 'optionA4' },
+          ],
+        },
+        { name: 'Option B', value: 'optionB' },
+        { name: 'Option C', value: 'optionC' },
+        { name: 'Option D', value: 'optionD' },
+        { name: 'Option E', value: 'optionE' },
+        {
+          name: 'Option F',
+          value: 'optionF',
+          subOptions: [
+            {
+              name: 'Option F 1',
+              value: 'optionF1',
+            },
+          ],
+        },
+      ],
+      v => v,
+      {
+        dropdown: true,
+      }
+    )
+  )
+  .add(
+    'mulitselect2',
+    F.multiSelect(
+      'MultiSelect2',
+      [
+        {
+          name: 'Option A',
+          value: 'optionA',
+          subOptions: [
+            {
+              name: 'Option A 1',
+              value: 'optionA1',
+              subOptions: [{ name: 'Option A 1 1', value: 'optionA11' }],
+            },
+            { name: 'Option A 2', value: 'optionA2' },
+            { name: 'Option A 3', value: 'optionA3' },
+            { name: 'Option A 4', value: 'optionA4' },
+          ],
+        },
         { name: 'Option B', value: 'optionB' },
       ],
       v => v
@@ -239,3 +292,4 @@ export const Form = F.create()
     F.text('Optional', v => v)
   );
 
+export default Form;

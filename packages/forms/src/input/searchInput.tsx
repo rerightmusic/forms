@@ -23,6 +23,7 @@ import _, { DebouncedFunc } from 'lodash';
 import * as React from 'react';
 import { isMobile } from 'react-device-detect';
 import { mergeSx } from '../mui';
+import Anchor from '../output/Anchor';
 
 export type SearchValue<T> = {
   title: string;
@@ -56,7 +57,7 @@ const SearchInput = <T,>({
   isEqual,
   optionSx,
 }: {
-  createNew?: { label: (title: string) => string; onClick: (title: string) => void }[];
+  createNew?: (value: string) => { label: string; onClick: () => void }[];
   sx?: SxProps<Theme>;
   error?: string;
   createFromText?: (tx: string) => SearchValue<T>;
@@ -71,10 +72,19 @@ const SearchInput = <T,>({
   margin?: 'dense' | 'normal';
   onChange: (value: SearchValue<T> | null) => void;
   onSelectedClick?: (selected: SearchValue<T>) => void;
-  onSelectedHref?: (selected: SearchValue<T>) => string;
+  onSelectedHref?:
+    | { href: (selected: SearchValue<T>) => string; explicit: boolean }
+    | ((selected: SearchValue<T>) => string);
   onSearch: (keywords: string) => Promise<Either<string, SearchValue<T>[]>>;
   optionSx?: SxProps<Theme>;
 }) => {
+  const onSelectedHref_ = onSelectedHref
+    ? {
+        explicit: typeof onSelectedHref === 'object' ? onSelectedHref.explicit : true,
+        href: (v: SearchValue<T>) =>
+          typeof onSelectedHref === 'object' ? onSelectedHref.href(v) : onSelectedHref(v),
+      }
+    : undefined;
   const debouncedSearch = () =>
     _.debounce(
       (value: string) => {
@@ -127,9 +137,10 @@ const SearchInput = <T,>({
     value !== state.selected?.value && setState(s => ({ ...s, selected: value || null }));
   }, [value]);
 
-  const onSelected = onSelectedClick !== undefined || onSelectedHref !== undefined;
+  const onSelected =
+    onSelectedClick !== undefined || (onSelectedHref_ !== undefined && onSelectedHref_.explicit);
   React.useEffect(() => {
-    state.mounted && onChange && onChange(state.selected);
+    state.mounted && !_.isEqual(state.selected, value) && onChange && onChange(state.selected);
   }, [state.selected]);
 
   React.useEffect(() => {
@@ -178,7 +189,7 @@ const SearchInput = <T,>({
         setState(s => ({ ...s, open: false }));
       }}
       isOptionEqualToValue={(option, value) => isEqual(option.value.value, value.value.value)}
-      getOptionLabel={option => option.value.title || ''}
+      getOptionLabel={option => (typeof option === 'string' ? option : option.value.title) || ''}
       filterOptions={(options, params) => {
         const { inputValue } = params;
         const isExisting = options.some(
@@ -186,14 +197,14 @@ const SearchInput = <T,>({
         );
         if (inputValue !== '' && !isExisting) {
           if (createNew) {
-            createNew.forEach(cn =>
+            createNew(inputValue).forEach(cn =>
               options.push({
                 value: {
-                  title: cn.label(inputValue),
+                  title: cn.label,
                   value: null as any,
                 },
                 idx: options.length,
-                onClick: () => cn.onClick(inputValue),
+                onClick: cn.onClick,
               })
             );
           } else if (options.length === 0 && !createFromText) {
@@ -203,7 +214,6 @@ const SearchInput = <T,>({
                 value: null as any,
               },
               idx: options.length,
-              onClick: () => {},
             });
           }
         }
@@ -240,8 +250,9 @@ const SearchInput = <T,>({
         );
       }}
       renderOption={(_, f, __) => {
+        let item;
         if (f.onClick) {
-          return (
+          item = (
             <ListItem
               onClick={f.onClick}
               key={f.idx}
@@ -254,17 +265,49 @@ const SearchInput = <T,>({
               <ListItemText primary={f.value.title} secondary={f.value.subtitle} />
             </ListItem>
           );
+        } else if (f.value.value) {
+          item = (
+            <ListItem
+              onClick={() => {
+                setState(s => ({ ...s, selected: f.value, options: [], open: false }));
+              }}
+              key={f.idx}
+              sx={{ cursor: 'pointer', '&:hover': { background: '#F0F0F0' }, ...optionSx }}
+            >
+              <ListItemText
+                primary={f.value.title}
+                secondary={f.value.subtitle}
+                sx={{ userSelect: 'none' }}
+              />
+            </ListItem>
+          );
+        } else {
+          item = (
+            <ListItem
+              onClick={() => {
+                setState(s => ({ ...s, options: [], open: false }));
+              }}
+              key={f.idx}
+              sx={optionSx}
+            >
+              <ListItemText
+                primary={f.value.title}
+                secondary={f.value.subtitle}
+                sx={{ userSelect: 'none' }}
+              />
+            </ListItem>
+          );
         }
-        return (
-          <ListItem
-            onClick={() => {
-              setState(s => ({ ...s, selected: f.value, options: [], open: false }));
-            }}
+        return onSelectedHref_ && f.value.value ? (
+          <Anchor
             key={f.idx}
-            sx={{ cursor: 'pointer', '&:hover': { background: '#F0F0F0' }, ...optionSx }}
+            onClick={e => e.preventDefault()}
+            href={onSelectedHref_.href(f.value)}
           >
-            <ListItemText primary={f.value.title} secondary={f.value.subtitle} />
-          </ListItem>
+            {item}
+          </Anchor>
+        ) : (
+          item
         );
       }}
       options={state.options}
@@ -336,7 +379,7 @@ const SearchInput = <T,>({
                 {state.loading && <CircularProgress color="inherit" size={20} />}
                 {state.selected && onSelected && (
                   <a
-                    href={onSelectedHref ? onSelectedHref(state.selected) : ''}
+                    href={onSelectedHref_ ? onSelectedHref_.href(state.selected) : ''}
                     target={isMobile ? '_self' : '_blank'}
                     rel={'noreferrer'}
                   >

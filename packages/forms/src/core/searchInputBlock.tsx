@@ -23,9 +23,9 @@ export function search<R, T, Req extends boolean, V>(
       onSelectedClick?: (selected: SearchValue<T>) => void;
       onSelectedHref?: (selected: SearchValue<T>) => string;
       createFromText?: (tx: string) => SearchValue<T>;
-      createNew?: {
-        onClick: (tx: string) => void;
-        label: (tx: string) => string;
+      createNew?: (value: string) => {
+        onClick: () => void;
+        label: string;
       }[];
     }
   >
@@ -38,16 +38,16 @@ export function search<R, T, Req extends boolean, V>(
     ).chain(fromDyn(prov, validate));
 
   return new NestedInputBlock({
-    calculateState: ({ get, seed }) => {
-      const validation = getValidation(get?.partialState || seed);
-      const opts_ = opts && fromDyn(get?.partialState || seed, opts);
+    calculateState: ({ state, seed }) => {
+      const validation = getValidation(state?.get.partialState || seed);
+      const opts_ = opts && fromDyn(state?.get.partialState || seed, opts);
       return {
         tag: 'InputState',
-        partialState: get?.partialState || seed || validation._default,
-        edited: get?.edited || false,
+        partialState: state?.get.partialState || seed || validation._default,
+        edited: state?.get.edited || false,
         ignore: opts_?.ignore,
         visible: opts_?.visible,
-        valid: validation.validate(get?.partialState || seed || validation._default),
+        valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
     block: ({ get, set }) => {
@@ -98,9 +98,9 @@ export type SearchInputBlock<T> = {
   disabled?: boolean;
   visible?: boolean;
   createFromText?: (tx: string) => SearchValue<T>;
-  createNew?: {
-    onClick: (tx: string) => void;
-    label: (tx: string) => string;
+  createNew?: (value: string) => {
+    onClick: () => void;
+    label: string;
   }[];
   required: boolean;
   error: string;

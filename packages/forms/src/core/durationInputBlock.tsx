@@ -18,13 +18,13 @@ export function duration<R, Req extends boolean, V>(
     ).chain(fromDyn(prov, validate));
 
   return new NestedInputBlock({
-    calculateState: ({ get, seed }) => {
-      const validation = getValidation(get?.partialState || seed);
+    calculateState: ({ state, seed }) => {
+      const validation = getValidation(state?.get.partialState || seed);
       return {
         tag: 'InputState',
-        partialState: get?.partialState || seed || validation._default,
-        edited: get?.edited || false,
-        valid: validation.validate(get?.partialState || seed || validation._default),
+        partialState: state?.get.partialState || seed || validation._default,
+        edited: state?.get.edited || false,
+        valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
     block: ({ get, set }) => {

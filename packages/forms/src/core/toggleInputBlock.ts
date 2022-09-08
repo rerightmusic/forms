@@ -48,14 +48,26 @@ export function toggle<
 
   const template = b(create());
   return new NestedInputBlock({
-    calculateState: ({ req, get, seed }) => {
+    calculateState: ({ req, state, seed }) => {
       const initialState = seed
-        ? template.apply.calculateState({ req, get: get?.partialState || null, seed })
+        ? template.apply.calculateState({
+            req,
+            state:
+              state && state.get.partialState
+                ? {
+                    get: state.get.partialState,
+                    set: x => {
+                      state.set({ ...state.get, partialState: x, valid: x.valid });
+                    },
+                  }
+                : null,
+            seed,
+          })
         : null;
       return {
         tag: 'InputState',
         partialState: initialState,
-        edited: get?.edited || false,
+        edited: state?.get.edited || false,
         valid: initialState ? initialState.valid : right(null),
       };
     },
@@ -67,7 +79,7 @@ export function toggle<
         value: get.partialState,
         label,
         visible: opts_?.visible,
-        buildEmptyValue: () => template.apply.calculateState({ req, get: null, seed: null }),
+        buildEmptyValue: () => template.apply.calculateState({ req, state: null, seed: null }),
         template: (value, onChange) => {
           return template.apply.block({ req, get: value, set: onChange });
         },

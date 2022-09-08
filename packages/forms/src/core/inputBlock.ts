@@ -42,7 +42,7 @@ export class NestedInputBlock<R, _Req extends boolean, PS, P, V, B> {
       calculateState: props =>
         this.apply.calculateState({
           req: props.req,
-          get: props.get,
+          state: props.state,
           seed: props.seed ? f(props.seed) : null,
         }),
     });
@@ -52,11 +52,16 @@ export class NestedInputBlock<R, _Req extends boolean, PS, P, V, B> {
 export type CalculateProps<R, PS, P, V> = {
   req: R;
   seed: P | null;
-  get: InputState<PS, V> | null;
+  state: StateProps<PS, V> | null;
 };
 
 export type RenderProps<R, PS, V> = {
   req: R;
+  get: InputState<PS, V>;
+  set: (s: InputState<PS, V>) => void;
+};
+
+export type StateProps<PS, V> = {
   get: InputState<PS, V>;
   set: (s: InputState<PS, V>) => void;
 };

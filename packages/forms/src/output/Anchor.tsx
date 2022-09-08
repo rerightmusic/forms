@@ -1,15 +1,17 @@
 import { Link as LinkMui, Theme } from '@mui/material';
 import { SxProps } from '@mui/system';
 import Link from 'next/link';
-import { HTMLAttributeAnchorTarget } from 'react';
+import { HTMLAttributeAnchorTarget, MouseEventHandler } from 'react';
 
 const Anchor = ({
   href,
+  onClick,
   children,
   sx,
   target,
 }: {
   href: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement> & MouseEventHandler<HTMLSpanElement>;
   sx?: SxProps<Theme>;
   target?: HTMLAttributeAnchorTarget;
   children: React.ReactNode;
@@ -19,6 +21,7 @@ const Anchor = ({
     // eslint-disable-next-line @next/next/link-passhref
     <Link href={href}>
       <LinkMui
+        onClick={onClick}
         href={href}
         sx={{
           color: 'inherit',

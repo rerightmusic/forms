@@ -112,10 +112,23 @@ const Tags = ({
         renderTags={(value: readonly Tag[], getTagProps) =>
           value.map((tag: Tag, index: number) => {
             const { key, ...otherProps } = getTagProps({ index });
-            return <Chip key={key} variant="outlined" label={tag.tag} {...otherProps} />;
+            return (
+              <Chip
+                key={key}
+                variant="outlined"
+                label={tag.tag}
+                {...otherProps}
+                sx={{
+                  '& .MuiChip-deleteIconOutlinedColorDefault': {
+                    color: '#d32f2f',
+                    '&:hover': { color: '#aa2424' },
+                  },
+                }}
+              />
+            );
           })
         }
-        getOptionLabel={o => o.tag}
+        getOptionLabel={o => (typeof o === 'string' ? o : o.tag)}
         options={state.options}
         loading={state.loading}
         renderInput={params => {

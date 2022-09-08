@@ -160,18 +160,29 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
       }
     >
   ): RecordNestedInputBlock<R, S, V> {
+    const getDyn: (
+      req: R,
+      partialState: RecordPartialState<S> | null,
+      set?: (x: RecordState<S, V>) => void,
+      partial?: RecordPartial<S> | null
+    ) => RecordDynamicProvided<R, E, S> = (req, partialState, set, partial) => ({
+      req,
+      state: (partialState as any) || null,
+      partial: partial ? partial : getPartial(partialState || ({} as any)),
+      valid: getValidsOrNull(partialState || ({} as any)),
+      setPartial: (s: RecordPartial<S>) => {
+        set ? set(calculateState({ req, seed: s, state: null })) : {};
+      },
+    });
+
     const getValidation = (
       req: R,
       s: RecordPartialState<S> | null,
+      set?: (x: RecordState<S, V>) => void,
       p?: RecordPartial<S> | null
     ) => {
       return fromDyn(
-        {
-          req: req,
-          state: s as any,
-          partial: p ? p : s ? getPartial(s) : {},
-          valid: s ? getValidsOrNull(s) : {},
-        },
+        getDyn(req, s, set, p),
         validate
       )(
         new Validator<true, RecordPartialState<S>, RecordValid<S>>(true, v => {
@@ -180,32 +191,47 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
       );
     };
 
-    const getDyn = (req: R, state: RecordState<S, V> | null, partial?: RecordPartial<S> | null) =>
-      ({
-        req,
-        state: (state?.partialState as any) || null,
-        partial: partial ? partial : getPartial(state?.partialState || ({} as any)),
-        valid: getValidsOrNull(state?.partialState || ({} as any)),
-      } as RecordDynamicProvided<R, E, S>);
-
     const calculateState = ({
       req,
       seed,
-      get,
+      state,
     }: CalculateProps<R, RecordPartialState<S>, RecordPartial<S>, V>) => {
-      const val = getValidation(req, get?.partialState || null, seed);
-      const dyn = getDyn(req, get, get?.partialState ? getPartial(get.partialState) : seed);
+      const val = getValidation(req, state?.get.partialState || null, state?.set, seed);
+      const dyn = getDyn(
+        req,
+        state?.get.partialState || null,
+        state?.set,
+        state?.get?.partialState ? getPartial(state?.get.partialState) : seed
+      );
       const opts_ = opts && fromDyn(dyn, opts);
-      const objs = this.apply.blocks.reduce(
+      let objs = this.apply.blocks.reduce(
         (p, b) => {
           const unwrapped = fromDyn(dyn, b);
           if (unwrapped.tag === 'KeyedChildBlock') {
-            const get_ = (get?.partialState as any)?.[unwrapped.key];
+            let state_ = null;
+            if (state) {
+              const get_ = (state.get.partialState as any)?.[unwrapped.key];
+              state_ = {
+                get: get_,
+                set: (x: any) =>
+                  state!.set({
+                    ...state!.get,
+                    partialState: { ...state!.get.partialState, [unwrapped.key]: x },
+                    valid: val.validate({ ...state!.get.partialState, [unwrapped.key]: x }),
+                  }),
+              };
+            }
+
             const seed_ = (seed as any)?.[unwrapped.key];
             const st = unwrapped.block.apply.calculateState({
               req,
               seed: seed_,
-              get: get_ !== undefined && get_ !== null ? get_ : null,
+              state: state_,
+              // state: {
+              //   //Necessary to avoid mistakes with empty string or 0
+              //   get: get_ !== undefined && get_ !== null ? get_ : null,
+              //   set: set_ ? set_ : null,
+              // },
             });
             return {
               edited: p.edited === true ? true : st.edited,
@@ -215,7 +241,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
               },
             };
           } else if (unwrapped.tag === 'SectionChildBlock') {
-            const st = unwrapped.block.apply.calculateState({ req, get, seed });
+            const st = unwrapped.block.apply.calculateState({ req, state, seed });
             return {
               edited: p.edited === true ? true : st.edited,
               partialState: {
@@ -229,7 +255,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
         { partialState: {} as any, edited: false }
       );
 
-      return {
+      let currState = {
         tag: 'InputState',
         partialState: objs.partialState,
         edited: objs.edited,
@@ -237,12 +263,18 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
         ignore: opts_?.ignore,
         visible: opts_?.visible,
       } as InputState<RecordPartialState<S>, V>;
+
+      if (!state) {
+        currState = calculateState({ req, seed, state: { get: currState, set: () => {} } });
+      }
+
+      return currState;
     };
 
     return new NestedInputBlock({
       calculateState,
       block: ({ req, set, get }) => {
-        const dyn = getDyn(req, get);
+        const dyn = getDyn(req, get.partialState, set);
         const opts_ = opts && fromDyn(dyn, opts);
 
         return {
@@ -259,7 +291,15 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
                   let latestState = calculateState({
                     req,
                     seed: null,
-                    get: { ...get, partialState: { ...get.partialState, [unwrapped.key]: s } },
+                    state: {
+                      get: { ...get, partialState: { ...get.partialState, [unwrapped.key]: s } },
+                      set: x =>
+                        set({
+                          ...get,
+                          partialState: { ...get.partialState, [unwrapped.key]: x },
+                          valid: val.validate({ ...get.partialState, [unwrapped.key]: x }),
+                        }),
+                    },
                   });
 
                   // We need to override unwrapped.key value in latestState because
@@ -295,6 +335,10 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
               if (block.block.visible === false) return [];
               return [block];
             }
+
+            if ((unwrapped.block as any).visible === false) {
+              return [];
+            }
             return [unwrapped.block];
           }),
         };
@@ -326,6 +370,7 @@ type OutputChildBlock = {
 };
 
 type RecordDynamicProvided<R, E, S> = {
+  setPartial: (s: RecordPartial<S>) => void;
   req: R;
   state: (RecordPartialState<S> & ExpectPartialState<E>) | null;
   partial: RecordPartial<S> & ExpectPartial<E>;

@@ -1,4 +1,4 @@
-export type OutputBlock = DisplayText | Break | MultilineText | Heading2;
+export type OutputBlock = DisplayText | Break | MultilineText | Heading2 | Button;
 
 export type DisplayText = {
   tag: 'DisplayText';
@@ -21,6 +21,13 @@ export type Break = {
 
 export type Value = {
   tag: 'Value';
+};
+
+export type Button = {
+  tag: 'Button';
+  label: string;
+  onClick: () => void;
+  visible?: boolean;
 };
 
 export const _break = () => {
@@ -48,4 +55,13 @@ export const multiline = (lines: string[]) => {
     tag: 'MultilineText',
     lines,
   } as MultilineText;
+};
+
+export const button = (label: string, onClick: () => void, opts?: { visible?: boolean }) => {
+  return {
+    tag: 'Button',
+    label,
+    onClick,
+    visible: opts?.visible,
+  } as Button;
 };

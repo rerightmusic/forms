@@ -10,6 +10,8 @@ export function text<R, Req extends boolean, V>(
     (v: Validator<false, string | null, string | null>) => Validator<Req, string | null, V>
   >,
   opts?: {
+    visible?: boolean;
+    ignore?: boolean;
     multiline?: boolean;
     fetchButton?: { label: string; onClick: () => Promise<Either<string, string>> };
   }
@@ -22,13 +24,16 @@ export function text<R, Req extends boolean, V>(
     ).chain(fromDyn(prov, validate));
 
   return new NestedInputBlock({
-    calculateState: ({ get, seed }) => {
-      const validation = getValidation(get?.partialState || seed);
+    calculateState: ({ state, seed }) => {
+      const validation = getValidation(state?.get.partialState || seed);
+      const opts_ = opts && fromDyn(state?.get.partialState || seed, opts);
       return {
         tag: 'InputState',
-        partialState: get?.partialState || seed || validation._default,
-        edited: get?.edited || false,
-        valid: validation.validate(get?.partialState || seed || validation._default),
+        partialState: state?.get.partialState || seed || validation._default,
+        edited: state?.get.edited || false,
+        ignore: opts_?.ignore,
+        visible: opts_?.visible,
+        valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
     block: ({ get, set }) => {
@@ -42,6 +47,7 @@ export function text<R, Req extends boolean, V>(
         required: validation._required,
         error: withError(validation.validate(get.partialState), get.edited),
         multiline: opts_?.multiline,
+        visible: opts_?.visible,
         fetchButton: opts_?.fetchButton,
         onChange: (v: string) => {
           const validation = getValidation(v);
@@ -96,6 +102,7 @@ export type TextInputBlock = {
   error: string;
   label: string;
   value: string | null;
+  visible?: boolean;
   multiline?: boolean;
   fetchButton?: { label: string; onClick: () => Promise<Either<string, string>> };
 };

@@ -58,13 +58,13 @@ export function date<R, Req extends boolean, V>(
     ).chain(fromDyn(prov, validate));
 
   return new NestedInputBlock({
-    calculateState: ({ seed, get }) => {
-      const date = get?.partialState || (seed ? new Date(seed) : null);
+    calculateState: ({ seed, state }) => {
+      const date = state?.get.partialState || (seed ? new Date(seed) : null);
       const validation = getValidation(date);
       return {
         tag: 'InputState',
         partialState: date || validation._default,
-        edited: get?.edited || false,
+        edited: state?.get.edited || false,
         valid: validation.validate(date),
       };
     },

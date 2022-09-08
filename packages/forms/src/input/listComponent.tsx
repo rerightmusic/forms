@@ -1,7 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Paper, Typography } from '@mui/material';
-import _ from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { TextError } from '../error';
 
 export type ListComponentProps<T> = {
@@ -13,7 +12,7 @@ export type ListComponentProps<T> = {
     label: string;
   };
   addLabel?: string;
-  removeLabelName?: string;
+  itemLabel?: string;
   value?: T[];
   required?: boolean;
   outlined?: boolean;
@@ -28,7 +27,7 @@ const ListComponent = <T,>({
   label,
   labelButton,
   addLabel,
-  removeLabelName,
+  itemLabel,
   required,
   template,
   error,
@@ -88,33 +87,42 @@ const ListComponent = <T,>({
           borderRadius: '4px 0px 4px 4px',
         })}
       >
-        <Button
-          variant="contained"
-          color="error"
-          size="small"
-          aria-label="delete"
+        <Paper
           sx={{
             display: 'flex',
             alignItems: 'center',
             position: 'absolute',
             right: '-1px',
             top: '-1px',
-            p: '5px 5px 5px 5px',
             borderRadius: '0px 4px 0px 4px',
-            cursor: 'pointer',
+            background: '#ededed',
+            borderColor: '#ededed',
+            borderBottomWidth: '1.5px',
           }}
-          onClick={() => {
-            deleteId(itemValue.id);
-            onChange(dataAndIds.filter(v => v.id !== itemValue.id).map(x => x.value));
-          }}
+          variant="outlined"
         >
-          <CloseIcon sx={{ fontSize: '20px' }} />
-          {removeLabelName && (
-            <Typography sx={{ fontSize: '14px', ml: '5px', mr: '5px' }}>
-              {removeLabelName}
+          {itemLabel && (
+            <Typography sx={{ fontSize: '14px', mx: '15px', color: '#666666', fontWeight: '500' }}>
+              {itemLabel.toUpperCase()}
             </Typography>
           )}
-        </Button>
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            aria-label="delete"
+            sx={{
+              minWidth: '40px',
+              borderRadius: '0px 4px 0px 0px',
+            }}
+            onClick={() => {
+              deleteId(itemValue.id);
+              onChange(dataAndIds.filter(v => v.id !== itemValue.id).map(x => x.value));
+            }}
+          >
+            <CloseIcon sx={{ fontSize: '20px' }} />
+          </Button>
+        </Paper>
         <Box sx={{ mt: '20px' }}>{itemForm}</Box>
       </Paper>
     );

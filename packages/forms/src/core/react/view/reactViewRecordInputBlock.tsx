@@ -1,18 +1,7 @@
 import LaunchIcon from '@mui/icons-material/Launch';
 import TransitEnterexitIcon from '@mui/icons-material/TransitEnterexit';
 import Visibility from '@mui/icons-material/Visibility';
-import {
-  Box,
-  Checkbox,
-  Chip,
-  Divider,
-  FormControlLabel,
-  FormGroup,
-  IconButton,
-  Paper,
-  Theme,
-  Typography,
-} from '@mui/material';
+import { Box, Chip, Divider, FormGroup, IconButton, Paper, Theme, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
 import { assertNever } from '../../../data';
@@ -24,6 +13,7 @@ import { isMobile } from 'react-device-detect';
 import { RecordPartial } from '../../record/recordBlockTypes';
 import { RecordInputBlock, RecordNestedInputBlock } from '../../record/recordInputBlock';
 import { SearchInputBlock } from '../../searchInputBlock';
+import { ExpandedOption, OptionComponent } from '../edit/reactMultiSelectInputBlock';
 import { addSpacing, withBreak } from '../layout';
 import ModalView from '../modalView';
 
@@ -39,10 +29,12 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
     const theme = useTheme();
     const initialState = block.apply.calculateState({
       req: other as any,
-      get: null,
+      state: null,
       seed: value || null,
     });
     const [state, setState] = useState(initialState);
+    const [expanded, setExpanded] = useState({} as Record<string, ExpandedOption>);
+
     const rec = block.apply.block({
       req: other as any,
       get: state,
@@ -51,16 +43,18 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
     return (
       <Box sx={{ pl: '2px', ...sx }}>
         {title && <Typography fontSize={'22px'}>{title}</Typography>}
-        {recordBlock(rec, theme)}
+        {recordBlock(rec, theme, expanded, setExpanded)}
       </Box>
     );
   };
 };
 
-export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element = (
-  block,
-  theme
-) => {
+export const recordBlock: (
+  block: RecordInputBlock,
+  theme: Theme,
+  expanded: Record<string, ExpandedOption>,
+  setExpanded: (e: Record<string, ExpandedOption>) => void
+) => JSX.Element = (block, theme, expanded, setExpanded) => {
   const minWidth = '100px';
   const maxWidth = '400px';
   const els = block.blocks.flatMap((b, idx) => {
@@ -127,7 +121,7 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
         );
 
       case 'RecordInputBlock':
-        return _withBreak(idx, recordBlock(b, theme), { my: 0 });
+        return _withBreak(idx, recordBlock(b, theme, expanded, setExpanded), { my: 0 });
 
       case 'SectionInputBlock':
         return _withBreak(
@@ -137,11 +131,11 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
               <Typography sx={{ color: 'gray', mb: '15px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
-              {recordBlock(b.block, theme)}
+              {recordBlock(b.block, theme, expanded, setExpanded)}
               {b.divider !== false && <Divider sx={{ my: '30px' }} light />}
             </Box>
           ) : (
-            recordBlock(b.block, theme)
+            recordBlock(b.block, theme, expanded, setExpanded)
           ),
           {
             my: 0,
@@ -177,7 +171,9 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
                       >
                         {recordBlock(
                           b.template(v, () => {}),
-                          theme
+                          theme,
+                          expanded,
+                          setExpanded
                         )}
                       </Paper>
                     );
@@ -205,7 +201,9 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
                 >
                   {recordBlock(
                     b.template(b.value, () => {}),
-                    theme
+                    theme,
+                    expanded,
+                    setExpanded
                   )}
                 </Box>
               )}
@@ -293,23 +291,50 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
           </>
         );
       case 'MultiSelectInputBlock':
+        const checkedOptions = b.options.filter(x => !!b.value?.find(o => o.value === x.value));
         return _withBreak(
           idx,
           <>
             {label(b.label)}
-            <FormGroup sx={{ mt: '-5px' }}>
-              {b.options.flatMap((o, idx) =>
-                b.value?.includes(o.value) ? (
-                  <FormControlLabel
+            {b.dropdown === true ? (
+              <Paper
+                sx={{
+                  overflow: 'auto',
+                  maxHeight: '190px',
+                  minWidth: '200px',
+                  p: '0px 15px',
+                }}
+                variant="outlined"
+              >
+                {checkedOptions.map((x, idx) => (
+                  <OptionComponent
                     key={idx}
-                    control={
-                      <Checkbox readOnly={true} checked={b.value?.includes(o.value) || false} />
-                    }
-                    label={o.name}
+                    option={x}
+                    onChange={() => {}}
+                    onExpand={e => setExpanded({ ...expanded, [x.value]: e })}
+                    expanded={expanded[x.value]}
+                    value={b.value}
+                    level={0}
+                    disableRipple={true}
                   />
-                ) : null
-              )}
-            </FormGroup>
+                ))}
+              </Paper>
+            ) : (
+              <FormGroup sx={{ mt: '-5px' }}>
+                {b.options.map((x, idx) => (
+                  <OptionComponent
+                    key={idx}
+                    option={x}
+                    onChange={() => {}}
+                    onExpand={e => setExpanded({ ...expanded, [x.value]: e })}
+                    expanded={expanded[x.value]}
+                    value={b.value}
+                    level={0}
+                    disableRipple={true}
+                  />
+                ))}
+              </FormGroup>
+            )}
           </>,
           { my: '5px', mx: '15px' }
         );
@@ -356,6 +381,9 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
             my: '5px',
           }
         );
+
+      case 'Button':
+        return [];
 
       default:
         return assertNever(b);

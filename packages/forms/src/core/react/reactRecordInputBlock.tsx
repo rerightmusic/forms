@@ -17,7 +17,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { RecordPartial } from '../record/recordBlockTypes';
 import { RecordNestedInputBlock } from '../record/recordInputBlock';
-import ReactEditRecordInputBlock from './edit/reactEditRecordInputBlock';
+import ReactEditRecordInputBlock, { SubmitProps } from './edit/reactEditRecordInputBlock';
 import ReactViewRecordInput from './view/reactViewRecordInputBlock';
 
 export const ReactRecordInput =
@@ -32,8 +32,7 @@ export const ReactRecordInput =
     return function ReactForm(
       props: {
         value: RecordPartial<S>;
-        onSubmit?: (v: V, editedData: Partial<V>) => Promise<Either<string, any>>;
-        inlineSubmit?: boolean;
+        submit?: SubmitProps<V>;
         editChildren?: React.ReactNode;
         formMode?: 'edit' | 'view';
         onChangeMode?: (mode: 'edit' | 'view') => void;
@@ -144,7 +143,7 @@ export const ReactRecordInput =
               </Button>
               {menu}
             </Box>
-            <Edit {...props} onSubmit={(a, b) => props.onSubmit && props.onSubmit(a, b)} />
+            <Edit {...props} />
             {props.editChildren ? <Box sx={{ mt: '40px' }}>{props.editChildren}</Box> : <></>}
           </Box>
         );

@@ -34,7 +34,7 @@ export function list<
     {
       minItems?: number;
       maxItems?: number;
-      itemName?: string;
+      itemLabel?: string;
       visible?: boolean;
       outlined?: boolean;
       noinline?: boolean;
@@ -105,28 +105,41 @@ export function list<
   };
   const template = b(create());
   return new NestedInputBlock({
-    calculateState: ({ req, get, seed }) => {
-      const validation = getValidation(req, get?.partialState || null, seed);
+    calculateState: ({ req, state, seed }) => {
+      const validation = getValidation(req, state?.get.partialState || null, seed);
       let st = null;
       if (seed) {
         st = seed?.map(s => {
-          return template.apply.calculateState({ req, get: null, seed: s });
+          return template.apply.calculateState({ req, state: null, seed: s });
         });
       }
 
-      if (get) {
-        st = get.partialState?.map(g => {
-          return template.apply.calculateState({ req, get: g, seed: null });
+      if (state) {
+        st = state.get.partialState?.map((g, idx) => {
+          const s = (x: RecordState<S, V>) => {
+            const p = state.get.partialState
+              ? state.get.partialState
+                  .slice(0, idx)
+                  .concat(x)
+                  .concat(state.get.partialState.slice(idx + 1))
+              : null;
+            state.set({
+              ...state.get,
+              partialState: p,
+              valid: validation.validate(p),
+            });
+          };
+          return template.apply.calculateState({ req, state: { get: g, set: s }, seed: null });
         });
       }
 
-      const opts_ = opts && fromDyn(getDyn(req, get?.partialState || null), opts);
-
+      const opts_ = opts && fromDyn(getDyn(req, state?.get.partialState || null, seed), opts);
       return {
         tag: 'InputState',
         ignore: opts_?.ignore,
+        visible: opts_?.visible,
         partialState: st || validation._default,
-        edited: get?.edited || false,
+        edited: state?.get.edited || false,
         valid: validation.validate(st || null),
       };
     },
@@ -148,7 +161,7 @@ export function list<
                   const partialState =
                     opts_.copyFrom!.state ||
                     opts_.copyFrom!.seed?.map(s => {
-                      const st = template.apply.calculateState({ req, get: null, seed: s });
+                      const st = template.apply.calculateState({ req, state: null, seed: s });
                       return st;
                     }) ||
                     null;
@@ -168,11 +181,11 @@ export function list<
         visible: opts_?.visible,
         outlined: opts_?.outlined,
         noinline: opts_?.noinline,
-        buildEmptyValue: () => template.apply.calculateState({ req, get: null, seed: null }),
+        buildEmptyValue: () => template.apply.calculateState({ req, state: null, seed: null }),
         template: (value, onChange) => {
           return template.apply.block({ req, get: value, set: onChange });
         },
-        itemName: opts_?.itemName,
+        itemLabel: opts_?.itemLabel,
         error: withError(validation.validate(get.partialState), get.edited),
         onChange: (v: RecordState<S, V>[]) => {
           const validation = getValidation(req, v);
@@ -209,7 +222,7 @@ export type ListInputBlock<S extends object, V> = {
   outlined?: boolean;
   noinline?: boolean;
   required?: boolean;
-  itemName?: string;
+  itemLabel?: string;
   copyFrom?: { getState: RecordState<S, V>[] | null; label: string };
   template: (
     value: RecordState<S, V>,
