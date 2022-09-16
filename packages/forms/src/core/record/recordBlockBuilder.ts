@@ -1,5 +1,5 @@
-import { camelToSpaced, isType, mapLeafTypes, mapReduceLeafTypes, title } from '../../data';
 import { Either, right } from 'fp-ts/lib/Either';
+import { camelToSpaced, isType, mapLeafTypes, mapReduceLeafTypes, title } from '../../data';
 import { Block } from '../block';
 import { Dynamic, fromDyn, mapDynamic } from '../dynamic';
 import { CalculateProps, InputBlockTypes, InputState, NestedInputBlock } from '../inputBlock';

@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { right } from 'fp-ts/lib/Either';
-import * as F from 'forms';
+import * as F from '..';
 import Form, { TagType } from './form';
 
 const EditForm_ = Form.interpret(F.ReactEditRecordInputBlock);

@@ -16,6 +16,7 @@ import { SearchInputBlock } from '../../searchInputBlock';
 import { ExpandedOption, OptionComponent } from '../edit/reactMultiSelectInputBlock';
 import { addSpacing, withBreak } from '../layout';
 import ModalView from '../modalView';
+import Image from 'next/image';
 
 const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlock<R, S, V>) => {
   return function ReactViewForm(
@@ -60,6 +61,15 @@ export const recordBlock: (
   const els = block.blocks.flatMap((b, idx) => {
     switch (b.tag) {
       case 'TextInputBlock':
+        const suffix = b.suffixImage && (
+          <Box sx={{ width: b.suffixImage.width, height: b.suffixImage.height }}>
+            <Image
+              src={b.suffixImage.image}
+              width={b.suffixImage.width}
+              height={b.suffixImage.height}
+            />
+          </Box>
+        );
         return b.multiline === true
           ? _withBreak(
               idx,
@@ -94,6 +104,7 @@ export const recordBlock: (
                     </Box>
                   </ModalView>
                 </Box>
+                {suffix}
               </Box>
             )
           : _addSpacing(
@@ -101,6 +112,7 @@ export const recordBlock: (
               <Box sx={{ minWidth, maxWidth }}>
                 {label(b.label)}
                 {value(b.value)}
+                {suffix}
               </Box>
             );
       case 'DateInputBlock':
@@ -222,6 +234,54 @@ export const recordBlock: (
                 {b.suffix && b.value ? ` ${b.suffix}` : ''}
               </Typography>
             </Box>
+          </Box>
+        );
+
+      case 'TypedTagsInputBlock':
+        return _addSpacing(
+          idx,
+          <Box sx={{ minWidth, maxWidth }}>
+            {label(b.label)}
+            {b.value && b.value.length > 0 ? (
+              <Box
+                sx={{ m: '-3px', mt: '0px', display: 'flex', flexWrap: 'wrap', maxWidth: '300px' }}
+              >
+                {b.value.map((t, idx) => (
+                  <Box key={idx} sx={{ m: '3px', my: '3px' }}>
+                    <Chip
+                      key={idx}
+                      variant="outlined"
+                      sx={{
+                        background: 'white',
+                        '& > .MuiChip-label': {
+                          paddingLeft: '0px',
+                        },
+                      }}
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Chip
+                            variant="filled"
+                            color="secondary"
+                            label={b.types.find(t_ => t.type === t_.value)?.label}
+                            sx={{
+                              mr: '5px',
+                              borderRadius: '16px 0 0 16px',
+                              fontSize: '12px',
+                              '& > .MuiChip-label': {
+                                px: '7px',
+                              },
+                            }}
+                          />
+                          <Typography sx={{ fontSize: '13px' }}>{t.tag}</Typography>
+                        </Box>
+                      }
+                    />
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              value('-')
+            )}
           </Box>
         );
 

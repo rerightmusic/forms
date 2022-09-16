@@ -23,6 +23,7 @@ import { reactNumberInputBlock } from './reactNumberInputBlock';
 import { reactSearchInputBlock } from './reactSearchInputBlock';
 import { reactSelectInputBlock } from './reactSelectInputBlock';
 import { reactTagsInputBlock } from './reactTagsInputBlock';
+import { reactTypedTagsInputBlock } from './reactTypedTagsInputBlock';
 import { reactTextInputBlock } from './reactTextInputBlock';
 import { reactToggleInputBlock } from './reactToggleInputBlock';
 import { reactValueInputBlock } from './reactValueInputBlock';
@@ -358,6 +359,9 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
 
       case 'DurationInputBlock':
         return reactDurationInputBlock(b, idx);
+
+      case 'TypedTagsInputBlock':
+        return reactTypedTagsInputBlock(b, idx);
 
       case 'TagsInputBlock':
         return reactTagsInputBlock(b, idx);

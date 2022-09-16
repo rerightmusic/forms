@@ -10,6 +10,7 @@ import { SelectInputBlock } from './selectInputBlock';
 import { TagsInputBlock } from './tagsInputBlock';
 import { TextInputBlock } from './textInputBlock';
 import { ToggleInputBlock } from './toggleInputBlock';
+import { TypedTagsInputBlock } from './typedTagsInputBlock';
 import { Invalid } from './validator';
 import { ValueInputBlock } from './valueInputBlock';
 
@@ -72,6 +73,7 @@ export type InputBlock =
   | RecordInputBlock
   | NumberInputBlock
   | TagsInputBlock
+  | TypedTagsInputBlock<any>
   | SearchInputBlock<any>
   | SelectInputBlock
   | MultiSelectInputBlock

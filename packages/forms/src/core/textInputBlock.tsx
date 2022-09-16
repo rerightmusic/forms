@@ -9,12 +9,16 @@ export function text<R, Req extends boolean, V>(
     string | null,
     (v: Validator<false, string | null, string | null>) => Validator<Req, string | null, V>
   >,
-  opts?: {
-    visible?: boolean;
-    ignore?: boolean;
-    multiline?: boolean;
-    fetchButton?: { label: string; onClick: () => Promise<Either<string, string>> };
-  }
+  opts?: Dynamic<
+    string | null,
+    {
+      visible?: boolean;
+      ignore?: boolean;
+      multiline?: boolean;
+      fetchButton?: { label: string; onClick: () => Promise<Either<string, string>> };
+      suffixImage?: { image: string; width: string; height: string };
+    }
+  >
 ): NestedInputBlock<R, Req, string | null, string | null, V, TextInputBlock> {
   const getValidation = (prov: string | null) =>
     new Validator<false, string | null, string | null>(
@@ -49,6 +53,7 @@ export function text<R, Req extends boolean, V>(
         multiline: opts_?.multiline,
         visible: opts_?.visible,
         fetchButton: opts_?.fetchButton,
+        suffixImage: opts_?.suffixImage,
         onChange: (v: string) => {
           const validation = getValidation(v);
           const val = v ? v : null;
@@ -105,4 +110,5 @@ export type TextInputBlock = {
   visible?: boolean;
   multiline?: boolean;
   fetchButton?: { label: string; onClick: () => Promise<Either<string, string>> };
+  suffixImage?: { image: string; width: string; height: string };
 };

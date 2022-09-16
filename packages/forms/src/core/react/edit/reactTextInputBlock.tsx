@@ -1,6 +1,15 @@
 import CloseIcon from '@mui/icons-material/Close';
 import Edit from '@mui/icons-material/Edit';
-import { Button, CircularProgress, IconButton, SxProps, TextField, Theme } from '@mui/material';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  SxProps,
+  TextField,
+  Theme,
+} from '@mui/material';
+import Image from 'next/image';
 import { useState } from 'react';
 import { mergeSx } from '../../../mui';
 import { TextInputBlock } from '../../textInputBlock';
@@ -8,56 +17,70 @@ import { addSpacing } from '../layout';
 import ModalView from '../modalView';
 
 export const reactTextInputBlock = (b: TextInputBlock, idx: number, sx?: SxProps<Theme>) => {
+  const suffix = b.suffixImage && (
+    <Box sx={{ ml: '4px', width: b.suffixImage.width, height: b.suffixImage.height }}>
+      <Image src={b.suffixImage.image} width={b.suffixImage.width} height={b.suffixImage.height} />
+    </Box>
+  );
   if (b.multiline === true)
     return addSpacing(
       idx,
-      <TextField
-        error={!!b.error}
-        helperText={b.error}
-        required={b.required}
-        onChange={ev => b.onChange(ev.target.value)}
-        label={b.label}
-        sx={theme => ({
-          width: '320px',
-          [theme.breakpoints.only('xs')]: { width: '100%' },
-          '&.MuiTextField-root': { m: 0 },
-          '& .MuiOutlinedInput-root': { p: 0 },
-          '& .MuiOutlinedInput-input': { textOverflow: 'ellipsis', overflow: 'hidden' },
-        })}
-        value={b.value || ''}
-        InputProps={{
-          endAdornment: (
-            <ModalView
-              icon={<Edit />}
-              doneButton
-              sx={theme => ({
-                width: '600px',
-                [theme.breakpoints.only('xs')]: { width: '100%', boxSizing: 'border-box' },
-              })}
-            >
-              <TextField
-                multiline={true}
-                minRows={10}
-                maxRows={20}
-                error={!!b.error}
-                helperText={b.error}
-                required={b.required}
-                onChange={ev => b.onChange(ev.target.value)}
-                label={b.label}
-                fullWidth
-                inputProps={{ 'max-height': '100%', height: '100%' }}
-                sx={{
-                  '&.MuiTextField-root': { m: 0 },
-                }}
-                value={b.value || ''}
-              />
-            </ModalView>
-          ),
-        }}
-      />
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <TextField
+          error={!!b.error}
+          helperText={b.error}
+          required={b.required}
+          onChange={ev => b.onChange(ev.target.value)}
+          label={b.label}
+          sx={theme => ({
+            width: '320px',
+            [theme.breakpoints.only('xs')]: { width: '100%' },
+            '&.MuiTextField-root': { m: 0 },
+            '& .MuiOutlinedInput-root': { p: 0 },
+            '& .MuiOutlinedInput-input': { textOverflow: 'ellipsis', overflow: 'hidden' },
+          })}
+          value={b.value || ''}
+          InputProps={{
+            endAdornment: (
+              <ModalView
+                icon={<Edit />}
+                doneButton
+                sx={theme => ({
+                  width: '600px',
+                  [theme.breakpoints.only('xs')]: { width: '100%', boxSizing: 'border-box' },
+                })}
+              >
+                <TextField
+                  multiline={true}
+                  minRows={10}
+                  maxRows={20}
+                  error={!!b.error}
+                  helperText={b.error}
+                  required={b.required}
+                  onChange={ev => b.onChange(ev.target.value)}
+                  label={b.label}
+                  fullWidth
+                  inputProps={{ 'max-height': '100%', height: '100%' }}
+                  sx={{
+                    '&.MuiTextField-root': { m: 0 },
+                  }}
+                  value={b.value || ''}
+                />
+              </ModalView>
+            ),
+          }}
+        />
+        {suffix}
+      </Box>
     );
 
-  return addSpacing(idx, <Text sx={sx} b={b} />);
+  return addSpacing(
+    idx,
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Text sx={sx} b={b} />
+      {suffix}
+    </Box>
+  );
 };
 
 const Text = ({ b, sx }: { b: TextInputBlock; sx?: SxProps<Theme> }) => {

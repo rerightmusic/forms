@@ -1,5 +1,5 @@
 import { left, right } from 'fp-ts/lib/Either';
-import * as F from 'forms';
+import * as F from '..';
 
 export enum TagType {
   TypeA = 'TypeA',

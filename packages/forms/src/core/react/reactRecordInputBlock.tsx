@@ -1,18 +1,8 @@
 import EditIcon from '@mui/icons-material/Edit';
 import MoreHoriz from '@mui/icons-material/MoreHoriz';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import {
-  Box,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  menuItemClasses,
-  Theme,
-  Typography,
-} from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, Theme, Typography } from '@mui/material';
 import { SxProps, useTheme } from '@mui/system';
-import { Either } from 'fp-ts/lib/Either';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { RecordPartial } from '../record/recordBlockTypes';

@@ -16,6 +16,7 @@ export { dyn } from './dynamic';
 export { list } from './listInputBlock';
 export { toggle } from './toggleInputBlock';
 export { tags } from './tagsInputBlock';
+export { typedTags, type TypedTag } from './typedTagsInputBlock';
 export { duration } from './durationInputBlock';
 export { date, year } from './dateInputBlock';
 export { value } from './valueInputBlock';
