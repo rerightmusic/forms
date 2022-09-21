@@ -27,6 +27,7 @@ const TypedTags = <T extends string>({
   onChange,
   required,
   width,
+  allowNewTags,
 }: {
   error?: string;
   required?: boolean;
@@ -35,6 +36,7 @@ const TypedTags = <T extends string>({
   value?: PartialTypedTag<T>[];
   selectedType?: { label: string; value: T };
   width?: string;
+  allowNewTags?: boolean;
   onChange?: (tags: PartialTypedTag<T>[]) => void;
   onSearch: (props: { keywords?: string; type: T }) => Promise<Either<string, TypedTag<T>[]>>;
 }) => {
@@ -124,14 +126,22 @@ const TypedTags = <T extends string>({
       if (idx === -1) return value?.length;
       return idx;
     });
-    _.differenceWith(orderedValue, state.value, (a, b) => a.id === b.id && a.type === b.type)
-      .length > 0 && changeValue(orderedValue || [], false);
+    if (
+      _.differenceWith(orderedValue, state.value, (a, b) => a.id === b.id && a.type === b.type)
+        .length > 0
+    )
+      changeValue(orderedValue || [], false);
+    else if (
+      _.differenceWith(state.value, orderedValue, (a, b) => a.id === b.id && a.type === b.type)
+        .length > 0
+    )
+      changeValue(orderedValue || [], false);
   }, [value]);
 
   return (
     <>
       <Autocomplete
-        freeSolo
+        freeSolo={allowNewTags !== false}
         multiple
         isOptionEqualToValue={(o, v) => {
           if (o.type === v.type) {
@@ -287,7 +297,7 @@ const TypedTags = <T extends string>({
             <Loader color={theme.palette.primary.main} loader="pulse-out" />
           </Box>
         )}
-        {state.textValue.length > 0 && (
+        {state.textValue.length > 0 && allowNewTags !== false && (
           <Box sx={{ mb: '10px', display: 'flex', alignItems: 'center' }}>
             <Typography sx={{ fontSize: '13px', mr: '5px' }}>
               Press Enter or click to add

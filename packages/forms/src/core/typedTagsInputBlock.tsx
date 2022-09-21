@@ -19,6 +19,7 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
       width?: string;
       minItems?: number;
       maxItems?: number;
+      allowNewTags?: boolean;
     }
   >
 ): NestedInputBlock<
@@ -67,6 +68,7 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
         required: validation._required,
         error: withError(validation.validate(get.partialState), get.edited),
         width: opts_?.width,
+        allowNewTags: opts_?.allowNewTags,
         onSearch,
         onChange: v => {
           const validation = getValidation(v);
@@ -90,6 +92,7 @@ export type TypedTagsInputBlock<T extends string> = {
   label: string;
   types: { label: string; value: T }[];
   width?: string;
+  allowNewTags?: boolean;
   value: PartialTypedTag<T>[] | null;
   onChange: (v: PartialTypedTag<T>[]) => void;
   onSearch: (props: { keywords?: string; type: T }) => Promise<Either<string, TypedTag<T>[]>>;
