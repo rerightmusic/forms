@@ -29,7 +29,8 @@ export function multiSelect<R, Req extends boolean, V>(
   SelectedOption[] | null,
   SelectedOption[] | string[] | null,
   V,
-  MultiSelectInputBlock
+  MultiSelectInputBlock,
+  {}
 > {
   const getValidation = (prov: SelectedOption[] | null) => {
     const opts_ = opts && fromDyn(prov, opts);
@@ -71,7 +72,7 @@ export function multiSelect<R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed_ || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
       const opts_ = opts && fromDyn(get.partialState || null, opts);
       return {
@@ -83,7 +84,7 @@ export function multiSelect<R, Req extends boolean, V>(
         dropdown: opts_?.dropdown,
         value: get.partialState || null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         onChange: (v: SelectedOption[]) => {
           const validation = getValidation(v);
           set({

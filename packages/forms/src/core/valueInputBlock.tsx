@@ -1,6 +1,6 @@
 import { right } from 'fp-ts/lib/Either';
 import { Dynamic, fromDyn } from './dynamic';
-import { NestedInputBlock } from './inputBlock';
+import { InputState, NestedInputBlock, RenderProps } from './inputBlock';
 import { Validator, withError } from './validator';
 
 export function value<R, Req extends boolean, V, V_>(
@@ -13,7 +13,7 @@ export function value<R, Req extends boolean, V, V_>(
       ignore?: boolean;
     }
   >
-): NestedInputBlock<R, Req, V, null, V_, ValueInputBlock<V>> {
+): NestedInputBlock<R, Req, V, null, V_, ValueInputBlock<V>, {}> {
   const getValidation = (prov: V) =>
     new Validator<false, V, V>(
       false,
@@ -34,7 +34,7 @@ export function value<R, Req extends boolean, V, V_>(
         valid: validation.validate(value),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }: RenderProps<R, V, V_, {}>) => {
       const validation = getValidation(value);
       const valid = validation.validate(value);
       const opts_ = opts && fromDyn(get.partialState, opts);
@@ -48,13 +48,12 @@ export function value<R, Req extends boolean, V, V_>(
           edited,
         });
       }
-
       return {
         tag: 'ValueInputBlock',
         value: get.partialState,
         visible: opts_?.visible ? true : false,
         label: opts_?.visible?.label,
-        error: withError(valid, edited),
+        error: withError(valid, edited, showErrors),
         required: validation._required,
       };
     },

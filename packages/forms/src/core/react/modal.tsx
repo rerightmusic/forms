@@ -8,7 +8,7 @@ import ReactEditRecordInputBlock from './edit/reactEditRecordInputBlock';
 export const useFormModal = <S extends any[]>(
   form: RecordBlockBuilder<{}, {}, S>,
   submitLabel: string,
-  alwaysEnabled: boolean,
+  disabled: boolean,
   onSubmit: (v: RecordValid<S>) => Promise<Either<string, any>>
 ) => {
   const Form = useMemo(() => form.interpret(ReactEditRecordInputBlock), [form]);
@@ -20,7 +20,7 @@ export const useFormModal = <S extends any[]>(
           <Form
             submit={{
               footer: false,
-              alwaysEnabled,
+              disabled,
               onSubmit: v => {
                 setState(false);
                 return onSubmit(v);

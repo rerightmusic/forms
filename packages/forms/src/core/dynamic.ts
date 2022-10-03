@@ -5,11 +5,12 @@ export type WithDynamic<A, B> = {
   value: (v: A) => B;
 };
 
-export const dyn = <A, B>(f: (v: A) => B) =>
-  ({
+export function dyn<A, B>(f: (v: A) => B): WithDynamic<A, B> {
+  return {
     tag: 'WithDynamic',
     value: f,
-  } as WithDynamic<A, B>);
+  };
+}
 
 export const fromDyn: <A, B>(s: A, v: Dynamic<A, B>) => B = (s, v) => {
   if (v && typeof v === 'object' && 'tag' in v && v.tag === 'WithDynamic') {

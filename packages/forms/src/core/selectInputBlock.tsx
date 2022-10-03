@@ -18,7 +18,7 @@ export function select<R, Req extends boolean, V>(
       inline?: boolean;
     }
   >
-): NestedInputBlock<R, Req, string | null, string | null, V, SelectInputBlock> {
+): NestedInputBlock<R, Req, string | null, string | null, V, SelectInputBlock, {}> {
   const getValidation = (prov: string | null) =>
     new Validator<false, string | null, string | null>(
       false,
@@ -36,7 +36,7 @@ export function select<R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const options_ = fromDyn(get.partialState || null, options);
       const validation = getValidation(get.partialState || null);
       const opts_ = opts && fromDyn(get.partialState || null, opts);
@@ -52,7 +52,7 @@ export function select<R, Req extends boolean, V>(
             ? get.partialState
             : null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         onChange: (v: string | null) => {
           const validation = getValidation(v);
           set({

@@ -14,7 +14,15 @@ export function number<R, Req extends boolean, V>(
   opts?: {
     suffix?: string;
   }
-): NestedInputBlock<R, true, string | number | null, string | number | null, V, NumberInputBlock> {
+): NestedInputBlock<
+  R,
+  true,
+  string | number | null,
+  string | number | null,
+  V,
+  NumberInputBlock,
+  {}
+> {
   const getValidation = (prov: string | number | null) =>
     new Validator<false, string | number | null, number | null>(
       false,
@@ -38,7 +46,7 @@ export function number<R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
 
       return {
@@ -51,7 +59,7 @@ export function number<R, Req extends boolean, V>(
               : get.partialState
             : null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         suffix: opts?.suffix,
         onChange: (v: string) => {
           set({

@@ -121,7 +121,7 @@ export const ReactRecordInput =
       if (state.mode === 'edit') {
         return (
           <Box sx={{ ...props.sx }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: '20px' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: '30px' }}>
               <Typography fontSize={'22px'}>{title}</Typography>
               <Button
                 sx={{ mt: '3px', ml: '15px', mr: '8px' }}

@@ -28,7 +28,8 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
   PartialTypedTag<T>[] | null,
   TypedTag<T>[] | null,
   V,
-  TypedTagsInputBlock<T>
+  TypedTagsInputBlock<T>,
+  {}
 > {
   const getValidation = (prov: PartialTypedTag<T>[] | null) =>
     new Validator<false, PartialTypedTag<T>[] | null, PartialTypedTag<T>[] | null>(
@@ -57,7 +58,7 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
       const opts_ = opts && fromDyn(get.partialState || null, opts);
       return {
@@ -66,7 +67,7 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
         types: types,
         value: get.partialState || null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         width: opts_?.width,
         allowNewTags: opts_?.allowNewTags,
         onSearch,

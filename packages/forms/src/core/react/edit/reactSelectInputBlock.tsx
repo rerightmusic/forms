@@ -1,4 +1,13 @@
-import { Chip, FormControl, FormGroup, FormHelperText, FormLabel, InputLabel } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  FormControl,
+  FormGroup,
+  FormHelperText,
+  FormLabel,
+  InputLabel,
+} from '@mui/material';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import { SelectInputBlock } from '../../selectInputBlock';
@@ -45,7 +54,7 @@ export const reactSelectInputBlock = (b: SelectInputBlock, idx: number) => {
           error={!!b.error}
           value={b.value || ''}
           label={b.label}
-          onChange={v => b.onChange(v.target.value)}
+          onChange={v => b.onChange(v.target.value !== '' ? v.target.value : null)}
           MenuProps={{
             PaperProps: {
               style: {
@@ -54,6 +63,11 @@ export const reactSelectInputBlock = (b: SelectInputBlock, idx: number) => {
             },
           }}
         >
+          {!b.required && (
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+          )}
           {b.options.map(o => (
             <MenuItem key={o.value} value={o.value}>
               {o.name}

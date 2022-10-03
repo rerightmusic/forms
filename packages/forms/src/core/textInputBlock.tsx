@@ -19,7 +19,7 @@ export function text<R, Req extends boolean, V>(
       suffixImage?: { image: string; width: string; height: string };
     }
   >
-): NestedInputBlock<R, Req, string | null, string | null, V, TextInputBlock> {
+): NestedInputBlock<R, Req, string | null, string | null, V, TextInputBlock, {}> {
   const getValidation = (prov: string | null) =>
     new Validator<false, string | null, string | null>(
       false,
@@ -40,7 +40,7 @@ export function text<R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
       const opts_ = opts && fromDyn(get.partialState, opts);
 
@@ -49,7 +49,7 @@ export function text<R, Req extends boolean, V>(
         label: fromDyn(get.partialState || null, label),
         value: get.partialState || null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         multiline: opts_?.multiline,
         visible: opts_?.visible,
         fetchButton: opts_?.fetchButton,

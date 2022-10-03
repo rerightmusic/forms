@@ -29,7 +29,15 @@ export function search<R, T, Req extends boolean, V>(
       }[];
     }
   >
-): NestedInputBlock<R, Req, SearchValue<T> | null, SearchValue<T> | null, V, SearchInputBlock<T>> {
+): NestedInputBlock<
+  R,
+  Req,
+  SearchValue<T> | null,
+  SearchValue<T> | null,
+  V,
+  SearchInputBlock<T>,
+  {}
+> {
   const getValidation = (prov: SearchValue<T> | null) =>
     new Validator<false, SearchValue<T> | null, SearchValue<T> | null>(
       false,
@@ -50,7 +58,7 @@ export function search<R, T, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
       const opts_ = opts && fromDyn(get.partialState, opts);
       return {
@@ -64,7 +72,7 @@ export function search<R, T, Req extends boolean, V>(
         createNew: opts_?.createNew,
         createFromText: opts_?.createFromText,
         isEqual,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         onSelectedClick: opts_?.onSelectedClick,
         onSelectedHref: opts_?.onSelectedHref,
         onSearch,
@@ -109,3 +117,8 @@ export type SearchInputBlock<T> = {
   isEqual: (v1: T, v2: T) => boolean;
   onSearch: (keywords: string) => Promise<Either<string, SearchValue<T>[]>>;
 };
+
+export const emptySearch =
+  <T,>() =>
+  () =>
+    Promise.resolve(right([] as SearchValue<T>[]));

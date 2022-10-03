@@ -1,4 +1,3 @@
-import { right } from 'fp-ts/lib/Either';
 import { Dynamic, fromDyn } from './dynamic';
 import { NestedInputBlock } from './inputBlock';
 import {
@@ -13,34 +12,31 @@ import {
   RecordValid,
   RecordValidOrNull,
 } from './record/recordBlockTypes';
-import { RecordInputBlock, RecordNestedInputBlock } from './record/recordInputBlock';
+import { RecordInputBlock } from './record/recordInputBlock';
 
-export function toggle<R extends object, R_ extends object, S extends any[]>(
+export function modal<R extends object, S extends any[]>(
   label: string,
   b: RecordBlockBuilder<R, {}, S>,
-  opts?: ToggleDynamic<
+  opts?: ModalDynamic<
     R,
     S,
     {
       visible?: boolean;
-      addLabel?: string;
-      removeLabel?: string;
+      modalLabelLines?: string[];
+      resultLabelLines?: string[];
+      editLabel?: string;
     }
   >
 ): NestedInputBlock<
-  R & R_,
+  R,
   true,
-  RecordState<S, RecordValid<S>> | null,
-  RecordPartial<S> | null,
-  RecordValid<S> | null,
-  ToggleInputBlock<S, RecordValid<S>>,
+  RecordState<S, RecordValid<S>>,
+  RecordPartial<S>,
+  RecordValid<S>,
+  ModalInputBlock<S, RecordValid<S>>,
   {}
 > {
-  const getDyn = (
-    req: R & R_,
-    state: RecordState<S, RecordValid<S>> | null,
-    partial?: RecordPartial<S> | null
-  ) => ({
+  const getDyn = (req: R, state: RecordState<S, RecordValid<S>>, partial?: RecordPartial<S>) => ({
     req,
     partial: partial ? partial : state ? getPartial(state.partialState) : null,
     valid: state ? getValidsOrNull(state.partialState) : null,
@@ -49,34 +45,31 @@ export function toggle<R extends object, R_ extends object, S extends any[]>(
   const template = b.build(v => v);
   return new NestedInputBlock({
     calculateState: ({ req, state, seed }) => {
-      const initialState =
-        !state?.get.partialState && seed === null
-          ? null
-          : template.apply.calculateState({
-              req,
-              state:
-                state && state.get.partialState
-                  ? {
-                      get: state.get.partialState,
-                      set: x => {
-                        state.set({ ...state.get, partialState: x, valid: x.valid });
-                      },
-                    }
-                  : null,
-              seed,
-            });
+      const initialState = template.apply.calculateState({
+        req,
+        state:
+          state && state.get.partialState
+            ? {
+                get: state.get.partialState,
+                set: x => {
+                  state.set({ ...state.get, partialState: x, valid: x.valid });
+                },
+              }
+            : null,
+        seed,
+      });
       return {
         tag: 'InputState',
         partialState: initialState,
         edited: state?.get.edited || false,
-        valid: initialState ? initialState.valid : right(null),
+        valid: initialState.valid,
       };
     },
     block: ({ req, get, set, showErrors }) => {
       const opts_ = opts && fromDyn(getDyn(req, get.partialState), opts);
 
       return {
-        tag: 'ToggleInputBlock',
+        tag: 'ModalInputBlock',
         value: get.partialState,
         label,
         visible: opts_?.visible,
@@ -84,15 +77,16 @@ export function toggle<R extends object, R_ extends object, S extends any[]>(
         template: (value, onChange) => {
           return template.apply.block({ req, get: value, set: onChange, showErrors });
         },
-        addLabel: opts_?.addLabel,
-        removeLabel: opts_?.removeLabel,
-        onChange: (v: RecordState<S, RecordValid<S>> | null) => {
+        editLabel: opts_?.editLabel,
+        modalLabelLines: opts_?.modalLabelLines,
+        resultLabelLines: opts_?.resultLabelLines,
+        onChange: (v: RecordState<S, RecordValid<S>>) => {
           set({
             ...get,
             tag: 'InputState',
             edited: true,
             partialState: v,
-            valid: v ? v.valid : right(null),
+            valid: v.valid,
           });
         },
       };
@@ -100,23 +94,24 @@ export function toggle<R extends object, R_ extends object, S extends any[]>(
   });
 }
 
-type ToggleDynamic<R, S, B> = Dynamic<
+type ModalDynamic<R, S, B> = Dynamic<
   {
     req: R;
-    partial: RecordPartial<S> | null;
-    valid: RecordValidOrNull<S> | null;
+    partial: RecordPartial<S>;
+    valid: RecordValidOrNull<S>;
   },
   B
 >;
 
-export type ToggleInputBlock<S extends any[], V> = {
-  tag: 'ToggleInputBlock';
-  onChange: (v: RecordState<S, RecordValid<S>> | null) => void;
+export type ModalInputBlock<S extends any[], V> = {
+  tag: 'ModalInputBlock';
+  onChange: (v: RecordState<S, RecordValid<S>>) => void;
   label: string;
-  value: RecordState<S, RecordValid<S>> | null;
+  value: RecordState<S, RecordValid<S>>;
   visible?: boolean;
-  addLabel?: string;
-  removeLabel?: string;
+  editLabel?: string;
+  modalLabelLines?: string[];
+  resultLabelLines?: string[];
   template: (
     value: RecordState<S, RecordValid<S>>,
     onChange: (s: RecordState<S, RecordValid<S>>) => void

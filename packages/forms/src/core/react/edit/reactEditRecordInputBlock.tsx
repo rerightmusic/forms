@@ -27,9 +27,11 @@ import { reactTypedTagsInputBlock } from './reactTypedTagsInputBlock';
 import { reactTextInputBlock } from './reactTextInputBlock';
 import { reactToggleInputBlock } from './reactToggleInputBlock';
 import { reactValueInputBlock } from './reactValueInputBlock';
+import { reactModalInputBlock } from './reactModalInputBlock';
+import { mergeSx } from '../../../mui';
 
 export type SubmitProps<V> = {
-  alwaysEnabled?: boolean;
+  disabled?: boolean;
   onSubmit: (v: V, edited: Partial<V>, reset: () => void) => Promise<Either<string, any>>;
   label?: string;
   footer: boolean;
@@ -114,6 +116,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
           props.onChange(d, getPartial(d), d.valid._tag === 'Right' ? d.valid.right : null);
         setState(s => ({ ...s, data: d, submissionState: { ...s.submissionState, error: '' } }));
       },
+      showErrors: false,
     });
 
     useLeavePageConfirm(state.data.edited);
@@ -128,24 +131,64 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
     const submitButton = (submit: SubmitProps<V>) => {
       let err = '';
       if (state.data.valid._tag === 'Left') {
-        err = withError(state.data.valid, state.data.edited);
+        err = withError(state.data.valid, state.data.edited, state.data.showErrors);
       }
       return (
         <Box
-          sx={{
+          sx={theme => ({
             display: 'flex',
             ...(submit?.footer === true
               ? { flexDirection: 'row', alignItems: 'center' }
               : { flexDirection: 'column-reverse', alignItems: 'start' }),
-          }}
+            [theme.breakpoints.only('xs')]: {
+              flexDirection: 'column-reverse',
+              alignItems: 'center',
+              width: '100%',
+            },
+          })}
         >
           {err && (
-            <TextError sx={submit?.footer === true ? { mr: '10px' } : { mt: '10px' }}>
-              {err}
-            </TextError>
+            <Box
+              sx={{
+                ...(submit?.footer === true ? { mr: '10px' } : { mt: '10px' }),
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'start',
+                [theme.breakpoints.only('xs')]: {
+                  mt: '10px',
+                },
+                flexWrap: 'wrap',
+                mx: '-5px',
+                pl: '5px',
+                pr: '15px',
+                maxWidth: '925px',
+              }}
+            >
+              <TextError>
+                <Box component="span" sx={{ display: 'inline', mr: '10px' }}>
+                  {err}
+                </Box>
+                {!state.data.showErrors && (
+                  <Button
+                    sx={{ m: '-5px' }}
+                    size="small"
+                    color="warning"
+                    onClick={() => setState(s => ({ ...s, data: { ...s.data, showErrors: true } }))}
+                  >
+                    Highlight
+                  </Button>
+                )}
+              </TextError>
+            </Box>
           )}
           {state.data.valid._tag !== 'Left' && state.submissionState.error && (
-            <TextError sx={submit?.footer === true ? { mr: '10px' } : { mt: '10px' }}>
+            <TextError
+              sx={
+                submit?.footer === true
+                  ? { mr: '10px', [theme.breakpoints.only('xs')]: { mt: '10px' } }
+                  : { mt: '10px' }
+              }
+            >
               {state.submissionState.error}
             </TextError>
           )}
@@ -169,7 +212,9 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
             <LoadingButton
               loading={state.loading}
               disabled={
-                submit?.alwaysEnabled === true
+                submit?.disabled === true
+                  ? true
+                  : submit?.disabled === false
                   ? false
                   : state.loading || !state.data.edited || state.data.valid._tag === 'Left'
               }
@@ -258,7 +303,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
     }, [state]);
 
     return (
-      <Box sx={{ pt: '10px' }}>
+      <Box>
         {props.title && (
           <Typography variant="h6" sx={{ mb: '20px' }}>
             {props.title}
@@ -304,10 +349,10 @@ const getQueryData: (router: NextRouter) => object = router => {
   return {};
 };
 
-const getValidEdited: <S, V>(state: InputState<RecordPartialState<S>, V>) => Partial<V> = state =>
+const getValidEdited: <S extends any[], V>(state: RecordState<S, V>) => Partial<V> = state =>
   mapLeafTypes(
     state.partialState,
-    isType<InputState<any, any>>(
+    isType<InputState<any, any, any>>(
       v => typeof v === 'object' && 'tag' in v && v.tag === 'InputState'
     ),
     v => {
@@ -319,34 +364,35 @@ const getValidEdited: <S, V>(state: InputState<RecordPartialState<S>, V>) => Par
     }
   );
 
-export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element = (
-  block,
-  theme
-) => {
+export const recordBlock: (
+  block: RecordInputBlock,
+  theme: Theme,
+  sx?: SxProps<Theme>
+) => JSX.Element = (block, theme, sx) => {
   const els = block.blocks.flatMap((b, idx) => {
     switch (b.tag) {
       case 'TextInputBlock':
         return reactTextInputBlock(b, idx);
 
       case 'RecordInputBlock':
-        return withBreak(idx, recordBlock(b, theme));
+        return withBreak(idx, recordBlock(b, theme, { p: 0 }));
 
       case 'SectionInputBlock':
         if (b.title) {
-          return addSpacing(
+          return withBreak(
             idx,
             <Box sx={{ [theme.breakpoints.only('xs')]: { width: 'calc(100% - 30px)' } }}>
               <Typography sx={{ color: 'gray', mb: '30px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
-              {recordBlock(b.block, theme)}
+              {recordBlock(b.block, theme, { p: 0 })}
               {b.divider !== false && <Divider sx={{ my: '30px' }} light />}
             </Box>,
             {
               my: 0,
             }
           );
-        } else return addSpacing(idx, recordBlock(b.block, theme));
+        } else return withBreak(idx, recordBlock(b.block, theme, { p: 0 }));
 
       case 'ListInputBlock':
         return reactListInputBlock(b, idx, theme);
@@ -398,6 +444,9 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
       case 'ToggleInputBlock':
         return reactToggleInputBlock(b, idx, theme);
 
+      case 'ModalInputBlock':
+        return reactModalInputBlock(b, idx, theme);
+
       case 'Heading2':
         return withBreak(
           idx,
@@ -425,13 +474,7 @@ export const recordBlock: (block: RecordInputBlock, theme: Theme) => JSX.Element
   });
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        m: '-15px',
-      }}
-    >
+    <Box sx={mergeSx({ display: 'flex', flexWrap: 'wrap', m: '-15px' }, sx)}>
       {block.label &&
         withBreak(
           'title',

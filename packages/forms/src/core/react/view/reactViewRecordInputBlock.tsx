@@ -40,6 +40,7 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
       req: other as any,
       get: state,
       set: setState,
+      showErrors: false,
     });
     return (
       <Box sx={{ pl: '2px', ...sx }}>
@@ -91,7 +92,7 @@ export const recordBlock: (
                     whiteSpace: 'nowrap',
                   })}
                   <ModalView
-                    icon={<Visibility />}
+                    openIcon={<Visibility />}
                     doneButton
                     sx={{
                       width: '600px',
@@ -199,9 +200,9 @@ export const recordBlock: (
         return _withBreak(
           idx,
           <Box>
-            {b.label && subSectionLabel(b.label)}
+            {b.label && sectionLabel(b.label)}
             <Box sx={{ mt: '-5px' }}>
-              {b.value && (
+              {b.value ? (
                 <Box
                   key={idx}
                   sx={{
@@ -218,8 +219,54 @@ export const recordBlock: (
                     setExpanded
                   )}
                 </Box>
+              ) : (
+                <Typography>-</Typography>
               )}
             </Box>
+          </Box>
+        );
+
+      case 'ModalInputBlock':
+        return _withBreak(
+          idx,
+          <Box>
+            {b.label && sectionLabel(b.label)}
+            {b.resultLabelLines && (
+              <Paper variant="outlined" sx={{ p: '15px', mt: '10px', mb: '3px' }}>
+                <Typography>
+                  {b.resultLabelLines.map((l, idx) => (
+                    <span key={idx}>
+                      {idx !== 0 && <br />}
+                      {l}
+                    </span>
+                  ))}
+                </Typography>
+              </Paper>
+            )}
+            <ModalView
+              openLabel={'View data'}
+              doneButton
+              sx={{ minWidth: '70%' }}
+              title={
+                b.modalLabelLines && (
+                  <Typography>
+                    {b.modalLabelLines.map((l, idx) => (
+                      <span key={idx}>
+                        {idx !== 0 && <br />}
+                        {l}
+                      </span>
+                    ))}
+                  </Typography>
+                )
+              }
+            >
+              {recordBlock(
+                b.template(b.value, () => {}),
+                theme,
+                expanded,
+                setExpanded
+              )}
+            </ModalView>
           </Box>
         );
 
@@ -510,12 +557,6 @@ const label = (str: string) => (
 
 const sectionLabel = (str: string) => (
   <Typography sx={{ fontSize: '15px', color: 'gray', mb: '5px' }}>{str}</Typography>
-);
-
-const subSectionLabel = (str: string) => (
-  <Typography sx={{ fontSize: '14px', color: 'gray', mb: '5px', fontWeight: '550' }}>
-    {str}
-  </Typography>
 );
 
 const value = (v: string | null, sx?: SxProps<Theme>) => (

@@ -9,7 +9,7 @@ export function duration<R, Req extends boolean, V>(
     number | null,
     (v: Validator<false, number | null, number | null>) => Validator<Req, number | null, V>
   >
-): NestedInputBlock<R, Req, number | null, number | null, V, DurationInputBlock> {
+): NestedInputBlock<R, Req, number | null, number | null, V, DurationInputBlock, {}> {
   const getValidation = (prov: number | null) =>
     new Validator<false, number | null, number | null>(
       false,
@@ -27,7 +27,7 @@ export function duration<R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
 
       return {
@@ -35,7 +35,7 @@ export function duration<R, Req extends boolean, V>(
         label: fromDyn(get.partialState || null, label),
         value: get.partialState || null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         onChange: (v: number | null) => {
           const validation = getValidation(v);
           set({

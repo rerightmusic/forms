@@ -19,7 +19,7 @@ export function tags<R, Req extends boolean, V>(
       selectFrom?: { tags: TagsResult[]; freeForm: boolean };
     }
   >
-): NestedInputBlock<R, Req, Tag[] | null, TagsResult[] | null, V, TagsInputBlock> {
+): NestedInputBlock<R, Req, Tag[] | null, TagsResult[] | null, V, TagsInputBlock, {}> {
   const getValidation = (prov: Tag[] | null) =>
     new Validator<false, Tag[] | null, Tag[] | null>(
       false,
@@ -47,7 +47,7 @@ export function tags<R, Req extends boolean, V>(
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
       const opts_ = opts && fromDyn(get.partialState || null, opts);
 
@@ -56,7 +56,7 @@ export function tags<R, Req extends boolean, V>(
         label,
         value: get.partialState || null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         selectFrom: opts_?.selectFrom,
         width: opts_?.width,
         onSearch,

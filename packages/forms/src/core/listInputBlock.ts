@@ -1,32 +1,30 @@
 import { right } from 'fp-ts/lib/Either';
 import { Dynamic, fromDyn } from './dynamic';
-import { InputState, NestedInputBlock } from './inputBlock';
+import { NestedInputBlock } from './inputBlock';
 import {
   create,
   getPartial,
   getValidsOrNull,
   RecordBlockBuilder,
 } from './record/recordBlockBuilder';
-import { RecordPartial, RecordState, RecordValidOrNull } from './record/recordBlockTypes';
-import { RecordInputBlock, RecordNestedInputBlock } from './record/recordInputBlock';
+import {
+  RecordPartial,
+  RecordState,
+  RecordValid,
+  RecordValidOrNull,
+} from './record/recordBlockTypes';
+import { RecordInputBlock } from './record/recordInputBlock';
 import { invalid, Validator, withError } from './validator';
 
-export function list<
-  R extends object,
-  R_ extends object,
-  Req extends boolean,
-  S extends any[],
-  V,
-  V_
->(
+export function list<R extends object, Req extends boolean, S extends any[], V>(
   label: string,
-  b: (r: RecordBlockBuilder<R, {}, []>) => RecordNestedInputBlock<R & R_, S, V>,
+  b: RecordBlockBuilder<R, {}, S>,
   validate: ListDynamic<
-    R & R_,
+    R,
     S,
     (
-      v: Validator<false, RecordState<S, V>[] | null, V[] | null>
-    ) => Validator<Req, RecordState<S, V>[] | null, V_>
+      v: Validator<false, RecordState<S, RecordValid<S>>[] | null, RecordValid<S>[] | null>
+    ) => Validator<Req, RecordState<S, RecordValid<S>>[] | null, V>
   >,
   opts?: ListDynamic<
     R,
@@ -40,23 +38,26 @@ export function list<
       noinline?: boolean;
       ignore?: boolean;
       copyFrom?: {
-        state?: RecordState<S, V>[];
+        state?: RecordState<S, RecordValid<S>>[];
         seed?: RecordPartial<S>[];
         label: string;
       };
     }
   >
 ): NestedInputBlock<
-  R & R_,
+  R,
   Req,
-  RecordState<S, V>[] | null,
+  RecordState<S, RecordValid<S>>[] | null,
   RecordPartial<S>[],
-  V_,
-  ListInputBlock<S, V>
+  V,
+  ListInputBlock<S, V>,
+  {},
+  'array',
+  S
 > {
   const getDyn = (
-    req: R & R_,
-    state: RecordState<S, V>[] | null,
+    req: R,
+    state: RecordState<S, RecordValid<S>>[] | null,
     partial?: RecordPartial<S>[] | null
   ) => ({
     req,
@@ -67,13 +68,13 @@ export function list<
   });
 
   const getValidation = (
-    req: R & R_,
-    state: RecordState<S, V>[] | null,
+    req: R,
+    state: RecordState<S, RecordValid<S>>[] | null,
     partial?: RecordPartial<S>[] | null
   ) => {
     const p = getDyn(req, state, partial);
     const opts_ = opts && fromDyn(getDyn(req, state), opts);
-    return new Validator<false, RecordState<S, V>[] | null, V[] | null>(
+    return new Validator<false, RecordState<S, RecordValid<S>>[] | null, RecordValid<S>[] | null>(
       false,
       v => {
         if (v !== null) {
@@ -103,7 +104,7 @@ export function list<
       })
       .chain(fromDyn(p, validate));
   };
-  const template = b(create());
+  const template = b.build(v => v);
   return new NestedInputBlock({
     calculateState: ({ req, state, seed }) => {
       const validation = getValidation(req, state?.get.partialState || null, seed);
@@ -116,7 +117,7 @@ export function list<
 
       if (state) {
         st = state.get.partialState?.map((g, idx) => {
-          const s = (x: RecordState<S, V>) => {
+          const s = (x: RecordState<S, RecordValid<S>>) => {
             const p = state.get.partialState
               ? state.get.partialState
                   .slice(0, idx)
@@ -143,7 +144,7 @@ export function list<
         valid: validation.validate(st || null),
       };
     },
-    block: ({ req, get, set }) => {
+    block: ({ req, get, set, showErrors }) => {
       const validation = getValidation(req, get.partialState || null);
       const opts_ = opts && fromDyn(getDyn(req, get.partialState || null), opts);
 
@@ -183,11 +184,11 @@ export function list<
         noinline: opts_?.noinline,
         buildEmptyValue: () => template.apply.calculateState({ req, state: null, seed: null }),
         template: (value, onChange) => {
-          return template.apply.block({ req, get: value, set: onChange });
+          return template.apply.block({ req, get: value, set: onChange, showErrors });
         },
         itemLabel: opts_?.itemLabel,
-        error: withError(validation.validate(get.partialState), get.edited),
-        onChange: (v: RecordState<S, V>[]) => {
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
+        onChange: (v: RecordState<S, RecordValid<S>>[]) => {
           const validation = getValidation(req, v);
           set({
             ...get,
@@ -211,22 +212,22 @@ type ListDynamic<R, S, B> = Dynamic<
   B
 >;
 
-export type ListInputBlock<S extends object, V> = {
+export type ListInputBlock<S extends any[], V> = {
   tag: 'ListInputBlock';
-  onChange: (v: RecordState<S, V>[]) => void;
+  onChange: (v: RecordState<S, RecordValid<S>>[]) => void;
   error: string;
   label?: string;
   labelButton?: { label: string; onClick: () => void };
-  value: RecordState<S, V>[] | null;
+  value: RecordState<S, RecordValid<S>>[] | null;
   visible?: boolean;
   outlined?: boolean;
   noinline?: boolean;
   required?: boolean;
   itemLabel?: string;
-  copyFrom?: { getState: RecordState<S, V>[] | null; label: string };
+  copyFrom?: { getState: RecordState<S, RecordValid<S>>[] | null; label: string };
   template: (
-    value: RecordState<S, V>,
-    onChange: (s: RecordState<S, V>) => void
+    value: RecordState<S, RecordValid<S>>,
+    onChange: (s: RecordState<S, RecordValid<S>>) => void
   ) => RecordInputBlock;
-  buildEmptyValue: () => RecordState<S, V>;
+  buildEmptyValue: () => RecordState<S, RecordValid<S>>;
 };

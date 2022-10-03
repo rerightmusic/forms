@@ -9,7 +9,10 @@ export type RecordNestedInputBlock<R, S extends any[], V> = NestedInputBlock<
   RecordPartialState<S>,
   RecordPartial<S>,
   V,
-  RecordInputBlock
+  RecordInputBlock,
+  { showErrors: boolean },
+  'object',
+  S
 >;
 
 export function record<R extends object, R_ extends object, S extends any[], V>(

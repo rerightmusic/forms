@@ -2,8 +2,15 @@ import { Either } from 'fp-ts/lib/Either';
 import { DateInputBlock } from './dateInputBlock';
 import { DurationInputBlock } from './durationInputBlock';
 import { ListInputBlock } from './listInputBlock';
+import { ModalInputBlock } from './modalInputBlock';
 import { MultiSelectInputBlock } from './multiSelectInputBlock';
 import { NumberInputBlock } from './numberInputBlock';
+import {
+  RecordPartial,
+  RecordPartialState,
+  RecordState,
+  RecordValid,
+} from './record/recordBlockTypes';
 import { RecordInputBlock, SectionInputBlock } from './record/recordInputBlock';
 import { SearchInputBlock } from './searchInputBlock';
 import { SelectInputBlock } from './selectInputBlock';
@@ -14,31 +21,51 @@ import { TypedTagsInputBlock } from './typedTagsInputBlock';
 import { Invalid } from './validator';
 import { ValueInputBlock } from './valueInputBlock';
 
-export type InputBlockTypes<Req extends boolean, PS, P, V> = {
-  required: Req;
-  partial: P;
-  partialState: PS;
-  valid: V;
-};
+export type ReducePS<Type, PS> = Type extends 'array' ? null : Type extends 'object' ? null : PS;
+export type ReduceP<Type, P> = Type extends 'array' ? null : Type extends 'object' ? null : P;
+export type GetPS<Type, PS, Shape> = Type extends 'array'
+  ? RecordState<Shape, RecordValid<Shape>>[] | null
+  : Type extends 'object'
+  ? RecordPartialState<Shape>
+  : PS;
 
-export type InputState<PS, V> = {
+export type GetP<Type, P, Shape> = Type extends 'array'
+  ? RecordPartial<Shape>[]
+  : Type extends 'object'
+  ? RecordPartial<Shape>
+  : P;
+
+export type InputState<PS, V, Other> = {
   tag: 'InputState';
   partialState: PS;
   edited: boolean;
   valid: Either<Invalid, V>;
   ignore?: boolean;
   visible?: boolean;
-};
-export class NestedInputBlock<R, _Req extends boolean, PS, P, V, B> {
+} & Other;
+
+// TODO make the Type Shape thing nicer. Currently allows storing the Shape for Arrays and Object to avoid pushing
+// resolved records or arrays of records to the Type at typechecking time
+export class NestedInputBlock<
+  R,
+  _Req extends boolean,
+  PS,
+  P,
+  V,
+  B,
+  Other,
+  Type = null,
+  Shape = null
+> {
   constructor(
     readonly apply: {
-      block: (props: RenderProps<R, PS, V>) => B;
-      calculateState: (props: CalculateProps<R, PS, P, V>) => InputState<PS, V>;
+      block: (props: RenderProps<R, PS, V, Other>) => B;
+      calculateState: (props: CalculateProps<R, PS, P, V, Other>) => InputState<PS, V, Other>;
     }
   ) {}
 
   mapSeed<P_>(f: (p: P_) => P) {
-    return new NestedInputBlock<R, _Req, PS, P_, V, B>({
+    return new NestedInputBlock<R, _Req, PS, P_, V, B, Other>({
       block: props => this.apply.block(props),
       calculateState: props =>
         this.apply.calculateState({
@@ -50,21 +77,22 @@ export class NestedInputBlock<R, _Req extends boolean, PS, P, V, B> {
   }
 }
 
-export type CalculateProps<R, PS, P, V> = {
+export type CalculateProps<R, PS, P, V, Other> = {
   req: R;
   seed: P | null;
-  state: StateProps<PS, V> | null;
+  state: StateProps<PS, V, Other> | null;
 };
 
-export type RenderProps<R, PS, V> = {
+export type RenderProps<R, PS, V, Other> = {
   req: R;
-  get: InputState<PS, V>;
-  set: (s: InputState<PS, V>) => void;
+  get: InputState<PS, V, Other>;
+  set: (s: InputState<PS, V, Other>) => void;
+  showErrors: boolean;
 };
 
-export type StateProps<PS, V> = {
-  get: InputState<PS, V>;
-  set: (s: InputState<PS, V>) => void;
+export type StateProps<PS, V, Other> = {
+  get: InputState<PS, V, Other>;
+  set: (s: InputState<PS, V, Other>) => void;
 };
 
 export type InputBlock =
@@ -81,4 +109,5 @@ export type InputBlock =
   | DateInputBlock
   | SectionInputBlock
   | ValueInputBlock<any>
-  | ToggleInputBlock<any, any>;
+  | ToggleInputBlock<any, any>
+  | ModalInputBlock<any, any>;

@@ -12,9 +12,17 @@ export const invalid = (error: string, state: 'edited' | 'always' | 'never') =>
     state,
   });
 
-export const withError = <P, V>(res: Either<Invalid, V>, edited: boolean | undefined) => {
+export const withError = <V>(
+  res: Either<Invalid, V>,
+  edited: boolean | undefined,
+  showErrors: boolean
+) => {
   if (res._tag === 'Left') {
-    if ((res.left.state === 'edited' && edited === true) || res.left.state === 'always') {
+    if (
+      showErrors ||
+      (res.left.state === 'edited' && edited === true) ||
+      res.left.state === 'always'
+    ) {
       return res.left.error;
     }
   }
@@ -24,7 +32,7 @@ export class Validator<Req extends boolean, P, V> {
   constructor(
     readonly _required: Req,
     private readonly _validate: (p: P, req?: boolean) => Either<Invalid, V>,
-    private readonly _missing: ((p: V) => boolean) | null = null,
+    private readonly _missing: ((p: P) => boolean) | null = null,
     readonly _default: P | null = null
   ) {}
 
@@ -61,14 +69,14 @@ export class Validator<Req extends boolean, P, V> {
         }
         return res_;
       },
-      null,
+      this._missing,
       this._default
     );
   }
 
   requiredIf<Req extends boolean>(
     predicate: Req,
-    missing: ((p: V) => boolean) | null = this._missing
+    missing: ((p: P) => boolean) | null = this._missing
   ): Validator<Req, P, NonNullable<V> | V> {
     if (predicate) {
       return this.required(missing) as any;
@@ -77,15 +85,20 @@ export class Validator<Req extends boolean, P, V> {
   }
 
   required(
-    missing: ((p: V) => boolean) | null = this._missing
+    missing: ((p: P) => boolean) | null = this._missing
   ): Req extends true ? unknown : Validator<true, P, NonNullable<V>> {
-    return this._andThen(true, (v, _) => {
-      if (v === null || v === undefined || (missing && missing(v))) {
-        return invalid('Field is required', 'edited');
-      } else {
-        return right(v as NonNullable<V>);
-      }
-    }) as any;
+    return new Validator<true, P, V>(
+      true,
+      (v, _) => {
+        if (v === null || v === undefined || (missing && missing(v))) {
+          return invalid('Field is required', 'edited');
+        } else {
+          return this._validate(v as NonNullable<P>);
+        }
+      },
+      missing,
+      this._default
+    ) as any;
   }
 
   default(v: P): Validator<Req, P, V> {

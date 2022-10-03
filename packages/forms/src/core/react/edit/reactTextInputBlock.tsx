@@ -43,7 +43,7 @@ export const reactTextInputBlock = (b: TextInputBlock, idx: number, sx?: SxProps
           InputProps={{
             endAdornment: (
               <ModalView
-                icon={<Edit />}
+                openIcon={<Edit />}
                 doneButton
                 sx={theme => ({
                   width: '600px',

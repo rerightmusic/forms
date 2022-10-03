@@ -13,7 +13,7 @@ export function year<R, Req extends boolean, V>(
   opts?: {
     maxDate?: Date;
   }
-): NestedInputBlock<R, Req, Date | null, number | null, V, DateInputBlock> {
+): NestedInputBlock<R, Req, Date | null, number | null, V, DateInputBlock, {}> {
   return date(
     label,
     mapDynamic(validate, d => (v: Validator<false, Date | null, string | null>) => {
@@ -37,7 +37,7 @@ export function date<R, Req extends boolean, V>(
     yearOnly?: boolean;
     maxDate?: Date;
   }
-): NestedInputBlock<R, Req, Date | null, string | null, V, DateInputBlock> {
+): NestedInputBlock<R, Req, Date | null, string | null, V, DateInputBlock, {}> {
   const getValidation = (prov: Date | null) =>
     new Validator<false, Date | null, string | null>(
       false,
@@ -54,7 +54,7 @@ export function date<R, Req extends boolean, V>(
           return invalid('Date is invalid', 'edited');
         }
       },
-      p => p === null || p === ''
+      p => p === null
     ).chain(fromDyn(prov, validate));
 
   return new NestedInputBlock({
@@ -68,14 +68,14 @@ export function date<R, Req extends boolean, V>(
         valid: validation.validate(date),
       };
     },
-    block: ({ get, set }) => {
+    block: ({ get, set, showErrors }) => {
       const validation = getValidation(get.partialState || null);
       return {
         tag: 'DateInputBlock',
         label: fromDyn(get.partialState || null, label),
         value: get.partialState || null,
         required: validation._required,
-        error: withError(validation.validate(get.partialState), get.edited),
+        error: withError(validation.validate(get.partialState), get.edited, showErrors),
         yearOnly: opts?.yearOnly,
         maxDate: opts?.maxDate,
         onChange: (v: Date | null) => {

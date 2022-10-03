@@ -67,17 +67,15 @@ const Form = F.create()
     'list',
     F.list(
       'List',
-      b =>
-        b
-          .add(
-            'list_item',
-            F.text('List item', v => v.required())
-          )
-          .add(
-            'list_item2',
-            F.text('List item2', v => v)
-          )
-          .build(v => v),
+      F.create()
+        .add(
+          'list_item',
+          F.text('List item', v => v.required())
+        )
+        .add(
+          'list_item2',
+          F.text('List item2', v => v)
+        ),
       v => v.required(),
       {
         minItems: 1,
@@ -115,6 +113,10 @@ const Form = F.create()
   .add(
     'number',
     F.number('Number', v => v.required())
+  )
+  .add(
+    'number_opt',
+    F.number('Number Optional', v => v)
   )
   .add(
     'percent',
@@ -199,6 +201,18 @@ const Form = F.create()
         { name: 'Option B', value: 'optionB' },
       ],
       v => v
+    )
+  )
+  .add(
+    'select_chips',
+    F.select(
+      'Select Chips',
+      [
+        { name: 'Option A', value: 'optionA' },
+        { name: 'Option B', value: 'optionB' },
+      ],
+      v => v,
+      { chips: true }
     )
   )
   .add(
@@ -321,5 +335,10 @@ const Form = F.create()
     'optional14',
     F.text('Optional', v => v)
   );
+
+type State = F.GetRecordPartialState<typeof Form>;
+type Partial = F.GetPartial<typeof Form>;
+const s = (p: Partial) => {};
+type Valid = F.GetValid<typeof Form>;
 
 export default Form;
