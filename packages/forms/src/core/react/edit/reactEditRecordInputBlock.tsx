@@ -1,38 +1,40 @@
 import LoadingButton from '@mui/lab/LoadingButton';
 import { Box, Button, Divider, Theme, Typography, useTheme } from '@mui/material';
 import { SxProps } from '@mui/system';
-import { assertNever, isType, mapLeafTypes } from '../../../data';
-import { TextError } from '../../../error';
 import { Either } from 'fp-ts/lib/Either';
 import _ from 'lodash';
 import { NextRouter, useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
+import { assertNever, isType, mapLeafTypes } from '../../../data';
+import { TextError } from '../../../error';
 import { useFooter } from '../../../layout/footer';
+import { mergeSx } from '../../../mui';
 import { useLeavePageConfirm } from '../../../window/leavePage';
 import { InputState } from '../../inputBlock';
 import { getPartial } from '../../record/recordBlockBuilder';
-import { RecordPartial, RecordPartialState, RecordState } from '../../record/recordBlockTypes';
+import { RecordPartial, RecordState } from '../../record/recordBlockTypes';
 import { RecordInputBlock, RecordNestedInputBlock } from '../../record/recordInputBlock';
+import { sectionToRecordInputBlock } from '../../sectionInputBlock';
 import { withError } from '../../validator';
 import { addSpacing, withBreak } from '../layout';
 import { reactDateInputBlock } from './reactDateInputBlock';
 import { reactDurationInputBlock } from './reactDurationInputBlock';
 import { reactListInputBlock } from './reactListInputBlock';
+import { reactModalInputBlock } from './reactModalInputBlock';
 import { reactMultiSelectInputBlock } from './reactMultiSelectInputBlock';
 import { reactNumberInputBlock } from './reactNumberInputBlock';
 import { reactSearchInputBlock } from './reactSearchInputBlock';
 import { reactSelectInputBlock } from './reactSelectInputBlock';
 import { reactTagsInputBlock } from './reactTagsInputBlock';
-import { reactTypedTagsInputBlock } from './reactTypedTagsInputBlock';
 import { reactTextInputBlock } from './reactTextInputBlock';
 import { reactToggleInputBlock } from './reactToggleInputBlock';
+import { reactTypedTagsInputBlock } from './reactTypedTagsInputBlock';
 import { reactValueInputBlock } from './reactValueInputBlock';
-import { reactModalInputBlock } from './reactModalInputBlock';
-import { mergeSx } from '../../../mui';
 
 export type SubmitProps<V> = {
   disabled?: boolean;
-  onSubmit: (v: V, edited: Partial<V>, reset: () => void) => Promise<Either<string, any>>;
+  hideSubmitButton?: boolean;
+  onSubmit?: (v: V, edited: Partial<V>, reset: () => void) => Promise<Either<string, any>>;
   label?: string;
   footer: boolean;
 };
@@ -71,7 +73,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       loading: false,
       submissionState: { error: '', success: false },
       mounted: false,
-      value,
+      value: getPartial(initialState),
     });
 
     useEffect(() => {
@@ -80,18 +82,30 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       // previous state. This means if a submit causes an error the first time the form resets to the previous value.
       // An easy way to test this is by removing the email validation from the textInputBlock and submitting an invalid email
       if (!_.isEqual(value, state.value)) {
+        const calc = block.apply.calculateState({
+          req: other as any,
+          state: null,
+          seed: { ...getPartial(state.data), ...(value || null) },
+        });
         setState(s => ({
           ...s,
-          data: block.apply.calculateState({
-            req: other as any,
-            state: null,
-            seed: { ...getPartial(s.data), ...(value || null) },
-          }),
-          prevValue: value,
+          data: calc,
+          value: getPartial(calc),
         }));
       }
       return () => {};
     }, [value]);
+
+    useEffect(() => {
+      if (!_.isEqual(state.value, value)) {
+        props.onChange &&
+          props.onChange(
+            state.data,
+            state.value,
+            state.data.valid._tag === 'Right' ? state.data.valid.right : null
+          );
+      }
+    }, [state.data]);
 
     /* eslint-disable react-hooks/exhaustive-deps */
     useEffect(() => {
@@ -112,9 +126,12 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       req: other as R,
       get: state.data,
       set: d => {
-        props.onChange &&
-          props.onChange(d, getPartial(d), d.valid._tag === 'Right' ? d.valid.right : null);
-        setState(s => ({ ...s, data: d, submissionState: { ...s.submissionState, error: '' } }));
+        setState(s => ({
+          ...s,
+          data: d,
+          value: getPartial(d),
+          submissionState: { ...s.submissionState, error: '' },
+        }));
       },
       showErrors: false,
     });
@@ -221,7 +238,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
               sx={{ paddingX: '40px', minWidth: '160px' }}
               variant="contained"
               onClick={() => {
-                if (state.data.valid._tag === 'Right') {
+                if (state.data.valid._tag === 'Right' && submit.onSubmit) {
                   setState(s => ({
                     ...s,
                     loading: true,
@@ -310,7 +327,9 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
           </Typography>
         )}
         {recordBlock(rec, theme)}
-        {submit && submit.footer !== true && <Box sx={{ mt: '30px' }}>{submitButton(submit)}</Box>}
+        {submit && submit.footer !== true && submit.hideSubmitButton !== true && (
+          <Box sx={{ mt: '30px' }}>{submitButton(submit)}</Box>
+        )}
       </Box>
     );
   };
@@ -385,14 +404,14 @@ export const recordBlock: (
               <Typography sx={{ color: 'gray', mb: '30px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
-              {recordBlock(b.block, theme, { p: 0 })}
-              {b.divider !== false && <Divider sx={{ my: '30px' }} light />}
+              {recordBlock(sectionToRecordInputBlock(b), theme, { p: 0 })}
+              {b.opts?.divider !== false && <Divider sx={{ my: '30px' }} light />}
             </Box>,
             {
               my: 0,
             }
           );
-        } else return withBreak(idx, recordBlock(b.block, theme, { p: 0 }));
+        } else return withBreak(idx, recordBlock(sectionToRecordInputBlock(b), theme, { p: 0 }));
 
       case 'ListInputBlock':
         return reactListInputBlock(b, idx, theme);

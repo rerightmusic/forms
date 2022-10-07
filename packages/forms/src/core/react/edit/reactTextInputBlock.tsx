@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { mergeSx } from '../../../mui';
 import { TextInputBlock } from '../../textInputBlock';
 import { addSpacing } from '../layout';
-import ModalView from '../modalView';
+import { Modal } from '../../../layout/modal';
 
 export const reactTextInputBlock = (b: TextInputBlock, idx: number, sx?: SxProps<Theme>) => {
   const suffix = b.suffixImage && (
@@ -42,9 +42,11 @@ export const reactTextInputBlock = (b: TextInputBlock, idx: number, sx?: SxProps
           value={b.value || ''}
           InputProps={{
             endAdornment: (
-              <ModalView
+              <Modal
                 openIcon={<Edit />}
-                doneButton
+                primaryButton={{
+                  label: 'Done',
+                }}
                 sx={theme => ({
                   width: '600px',
                   [theme.breakpoints.only('xs')]: { width: '100%', boxSizing: 'border-box' },
@@ -66,7 +68,7 @@ export const reactTextInputBlock = (b: TextInputBlock, idx: number, sx?: SxProps
                   }}
                   value={b.value || ''}
                 />
-              </ModalView>
+              </Modal>
             ),
           }}
         />

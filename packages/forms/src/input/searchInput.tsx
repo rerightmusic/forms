@@ -41,6 +41,7 @@ const SearchInput = <T,>({
   error,
   createFromText,
   label,
+  selectedSubtitleVisible,
   value,
   sx,
   onSearch,
@@ -65,6 +66,7 @@ const SearchInput = <T,>({
   required?: boolean;
   disabled?: boolean;
   readonly?: boolean;
+  selectedSubtitleVisible?: boolean;
   label?: string;
   placeholder?: string;
   value?: SearchValue<T>;
@@ -337,7 +339,11 @@ const SearchInput = <T,>({
         <TextField
           required={required}
           error={!!error || !!state.otherError}
-          helperText={error || state.otherError}
+          helperText={
+            error ||
+            state.otherError ||
+            (selectedSubtitleVisible === true && state.selected?.subtitle)
+          }
           {...params}
           fullWidth
           sx={{

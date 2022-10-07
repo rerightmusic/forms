@@ -20,6 +20,7 @@ export function search<R, T, Req extends boolean, V>(
       disabled?: boolean;
       visible?: boolean;
       ignore?: boolean;
+      selectedSubtitleVisible?: boolean;
       onSelectedClick?: (selected: SearchValue<T>) => void;
       onSelectedHref?: (selected: SearchValue<T>) => string;
       createFromText?: (tx: string) => SearchValue<T>;
@@ -69,6 +70,7 @@ export function search<R, T, Req extends boolean, V>(
         readonly: opts_?.readonly,
         disabled: opts_?.disabled,
         visible: opts_?.visible,
+        selectedSubtitleVisible: opts_?.selectedSubtitleVisible,
         createNew: opts_?.createNew,
         createFromText: opts_?.createFromText,
         isEqual,
@@ -104,6 +106,7 @@ export type SearchInputBlock<T> = {
   onSelectedHref?: (selected: SearchValue<T>) => string;
   readonly?: boolean;
   disabled?: boolean;
+  selectedSubtitleVisible?: boolean;
   visible?: boolean;
   createFromText?: (tx: string) => SearchValue<T>;
   createNew?: (value: string) => {

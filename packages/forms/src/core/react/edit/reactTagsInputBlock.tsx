@@ -1,9 +1,9 @@
-import { addSpacing } from '../layout';
 import { TagsInputBlock } from '../../tagsInputBlock';
+import { withBreak } from '../layout';
 import Tags from './tags';
 
 export const reactTagsInputBlock = (b: TagsInputBlock, idx: number) => {
-  return addSpacing(
+  return withBreak(
     idx,
     <Tags
       error={b.error}

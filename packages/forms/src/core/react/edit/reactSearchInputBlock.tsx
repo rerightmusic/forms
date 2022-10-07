@@ -12,6 +12,7 @@ export const reactSearchInputBlock = (b: SearchInputBlock<any>, idx: number) => 
       disabled={b.disabled}
       onSearch={b.onSearch}
       label={b.label}
+      selectedSubtitleVisible={b.selectedSubtitleVisible}
       required={b.required}
       createNew={b.createNew}
       createFromText={b.createFromText}

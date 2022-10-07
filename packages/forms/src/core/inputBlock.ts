@@ -11,8 +11,9 @@ import {
   RecordState,
   RecordValid,
 } from './record/recordBlockTypes';
-import { RecordInputBlock, SectionInputBlock } from './record/recordInputBlock';
+import { RecordInputBlock } from './record/recordInputBlock';
 import { SearchInputBlock } from './searchInputBlock';
+import { SectionInputBlock } from './sectionInputBlock';
 import { SelectInputBlock } from './selectInputBlock';
 import { TagsInputBlock } from './tagsInputBlock';
 import { TextInputBlock } from './textInputBlock';
@@ -61,19 +62,23 @@ export class NestedInputBlock<
     readonly apply: {
       block: (props: RenderProps<R, PS, V, Other>) => B;
       calculateState: (props: CalculateProps<R, PS, P, V, Other>) => InputState<PS, V, Other>;
-    }
+    },
+    readonly keys: string[] = []
   ) {}
 
   mapSeed<P_>(f: (p: P_) => P) {
-    return new NestedInputBlock<R, _Req, PS, P_, V, B, Other>({
-      block: props => this.apply.block(props),
-      calculateState: props =>
-        this.apply.calculateState({
-          req: props.req,
-          state: props.state,
-          seed: props.seed ? f(props.seed) : null,
-        }),
-    });
+    return new NestedInputBlock<R, _Req, PS, P_, V, B, Other>(
+      {
+        block: props => this.apply.block(props),
+        calculateState: props =>
+          this.apply.calculateState({
+            req: props.req,
+            state: props.state,
+            seed: props.seed ? f(props.seed) : null,
+          }),
+      },
+      this.keys
+    );
   }
 }
 

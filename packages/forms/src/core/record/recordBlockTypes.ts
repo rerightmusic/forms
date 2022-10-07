@@ -1,5 +1,6 @@
 import { GetP, GetPS, InputState } from '../inputBlock';
 import { RecordBlockBuilder } from './recordBlockBuilder';
+import { RecordNestedInputBlock } from './recordInputBlock';
 
 export type RecordState<S, V> = InputState<RecordPartialState<S>, V, { showErrors: boolean }>;
 
@@ -83,10 +84,18 @@ type RecordKeysOne<H> = H extends [infer K, infer _IB] ? (K extends string ? K :
 
 export type GetPartial<B> = B extends RecordBlockBuilder<any, any, infer S>
   ? RecordPartial<S>
+  : B extends RecordNestedInputBlock<any, infer S, any>
+  ? RecordPartial<S>
   : never;
 
 export type GetRecordPartialState<B> = B extends RecordBlockBuilder<any, any, infer S>
   ? RecordPartialState<S>
+  : B extends RecordNestedInputBlock<any, infer S, any>
+  ? RecordPartialState<S>
   : never;
 
-export type GetValid<B> = B extends RecordBlockBuilder<any, any, infer S> ? RecordValid<S> : never;
+export type GetValid<B> = B extends RecordBlockBuilder<any, any, infer S>
+  ? RecordValid<S>
+  : B extends RecordNestedInputBlock<any, infer S, any>
+  ? RecordValid<S>
+  : never;

@@ -8,6 +8,7 @@ import {
 } from './record/recordBlockBuilder';
 import {
   RecordPartial,
+  RecordPartialState,
   RecordState,
   RecordValid,
   RecordValidOrNull,
@@ -22,76 +23,96 @@ export function modal<R extends object, S extends any[]>(
     S,
     {
       visible?: boolean;
+      inline?: boolean;
       modalLabelLines?: string[];
-      resultLabelLines?: string[];
+      mode?:
+        | {
+            type: 'inline';
+            resultLabel?: string;
+          }
+        | {
+            type: 'multiline';
+            resultLabelLines?: string[];
+          };
       editLabel?: string;
+      primaryButton?: {
+        label?: string;
+        onClick?: () => void;
+      };
+      secondaryButton?: {
+        label?: string;
+        onClick?: () => void;
+      };
     }
   >
 ): NestedInputBlock<
   R,
   true,
-  RecordState<S, RecordValid<S>>,
+  RecordPartialState<S>,
   RecordPartial<S>,
   RecordValid<S>,
   ModalInputBlock<S, RecordValid<S>>,
-  {}
+  { showErrors: boolean }
 > {
-  const getDyn = (req: R, state: RecordState<S, RecordValid<S>>, partial?: RecordPartial<S>) => ({
+  const getDyn = (req: R, state: RecordPartialState<S>, partial?: RecordPartial<S>) => ({
     req,
-    partial: partial ? partial : state ? getPartial(state.partialState) : null,
-    valid: state ? getValidsOrNull(state.partialState) : null,
+    partial: partial ? partial : state ? getPartial(state) : null,
+    valid: state ? getValidsOrNull(state) : null,
   });
 
   const template = b.build(v => v);
-  return new NestedInputBlock({
-    calculateState: ({ req, state, seed }) => {
-      const initialState = template.apply.calculateState({
-        req,
-        state:
-          state && state.get.partialState
+  return new NestedInputBlock(
+    {
+      calculateState: ({ req, state, seed }) => {
+        const initialState = template.apply.calculateState({
+          req,
+          state: state
             ? {
-                get: state.get.partialState,
+                get: state.get,
                 set: x => {
-                  state.set({ ...state.get, partialState: x, valid: x.valid });
+                  state.set({ ...state.get, ...x, valid: x.valid });
                 },
               }
             : null,
-        seed,
-      });
-      return {
-        tag: 'InputState',
-        partialState: initialState,
-        edited: state?.get.edited || false,
-        valid: initialState.valid,
-      };
-    },
-    block: ({ req, get, set, showErrors }) => {
-      const opts_ = opts && fromDyn(getDyn(req, get.partialState), opts);
+          seed,
+        });
+        return {
+          ...initialState,
+          edited: state?.get.edited || false,
+          valid: initialState.valid,
+        };
+      },
+      block: ({ req, get, set, showErrors }) => {
+        const opts_ = opts && fromDyn(getDyn(req, get.partialState), opts);
 
-      return {
-        tag: 'ModalInputBlock',
-        value: get.partialState,
-        label,
-        visible: opts_?.visible,
-        buildEmptyValue: () => template.apply.calculateState({ req, state: null, seed: null }),
-        template: (value, onChange) => {
-          return template.apply.block({ req, get: value, set: onChange, showErrors });
-        },
-        editLabel: opts_?.editLabel,
-        modalLabelLines: opts_?.modalLabelLines,
-        resultLabelLines: opts_?.resultLabelLines,
-        onChange: (v: RecordState<S, RecordValid<S>>) => {
-          set({
-            ...get,
-            tag: 'InputState',
-            edited: true,
-            partialState: v,
-            valid: v.valid,
-          });
-        },
-      };
+        return {
+          tag: 'ModalInputBlock',
+          value: get,
+          label,
+          visible: opts_?.visible,
+          inline: opts_?.inline,
+          buildEmptyValue: () => template.apply.calculateState({ req, state: null, seed: null }),
+          template: (value, onChange) => {
+            return template.apply.block({ req, get: value, set: onChange, showErrors });
+          },
+          editLabel: opts_?.editLabel,
+          modalLabelLines: opts_?.modalLabelLines,
+          primaryButton: opts_?.primaryButton,
+          secondaryButton: opts_?.secondaryButton,
+          mode: opts_?.mode,
+          onChange: (v: RecordState<S, RecordValid<S>>) => {
+            set({
+              ...get,
+              ...v,
+              edited: true,
+              valid: v.valid,
+            });
+          },
+        };
+      },
     },
-  });
+    b.keys()
+  );
 }
 
 type ModalDynamic<R, S, B> = Dynamic<
@@ -109,9 +130,26 @@ export type ModalInputBlock<S extends any[], V> = {
   label: string;
   value: RecordState<S, RecordValid<S>>;
   visible?: boolean;
+  inline?: boolean;
   editLabel?: string;
+  mode?:
+    | {
+        type: 'inline';
+        resultLabel?: string;
+      }
+    | {
+        type: 'multiline';
+        resultLabelLines?: string[];
+      };
+  primaryButton?: {
+    label?: string;
+    onClick?: () => void;
+  };
+  secondaryButton?: {
+    label?: string;
+    onClick?: () => void;
+  };
   modalLabelLines?: string[];
-  resultLabelLines?: string[];
   template: (
     value: RecordState<S, RecordValid<S>>,
     onChange: (s: RecordState<S, RecordValid<S>>) => void

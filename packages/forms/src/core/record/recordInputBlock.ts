@@ -27,10 +27,3 @@ export type RecordInputBlock = {
   visible?: boolean;
   label?: string;
 };
-
-export type SectionInputBlock = {
-  tag: 'SectionInputBlock';
-  title?: string;
-  block: RecordInputBlock;
-  divider?: boolean;
-};

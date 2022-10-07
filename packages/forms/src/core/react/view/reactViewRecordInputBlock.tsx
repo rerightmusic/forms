@@ -4,19 +4,20 @@ import Visibility from '@mui/icons-material/Visibility';
 import { Box, Chip, Divider, FormGroup, IconButton, Paper, Theme, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
-import { assertNever } from '../../../data';
-import Anchor from '../../../output/Anchor';
-import { secondsToHoursMinutesSeconds } from '../../../time';
 import { format } from 'date-fns';
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
+import { assertNever } from '../../../data';
+import Modal from '../../../layout/modal';
+import Anchor from '../../../output/Anchor';
+import { secondsToHoursMinutesSeconds } from '../../../time';
 import { RecordPartial } from '../../record/recordBlockTypes';
 import { RecordInputBlock, RecordNestedInputBlock } from '../../record/recordInputBlock';
 import { SearchInputBlock } from '../../searchInputBlock';
+import { sectionToRecordInputBlock } from '../../sectionInputBlock';
 import { ExpandedOption, OptionComponent } from '../edit/reactMultiSelectInputBlock';
 import { addSpacing, withBreak } from '../layout';
-import ModalView from '../modalView';
-import Image from 'next/image';
 
 const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlock<R, S, V>) => {
   return function ReactViewForm(
@@ -91,9 +92,11 @@ export const recordBlock: (
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   })}
-                  <ModalView
+                  <Modal
                     openIcon={<Visibility />}
-                    doneButton
+                    primaryButton={{
+                      label: 'Done',
+                    }}
                     sx={{
                       width: '600px',
                       [theme.breakpoints.only('xs')]: { width: '100%', boxSizing: 'border-box' },
@@ -103,7 +106,7 @@ export const recordBlock: (
                       {label(b.label)}
                       {value(b.value, { whiteSpace: 'pre-wrap' })}
                     </Box>
-                  </ModalView>
+                  </Modal>
                 </Box>
                 {suffix}
               </Box>
@@ -144,11 +147,11 @@ export const recordBlock: (
               <Typography sx={{ color: 'gray', mb: '15px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
-              {recordBlock(b.block, theme, expanded, setExpanded)}
-              {b.divider !== false && <Divider sx={{ my: '30px' }} light />}
+              {recordBlock(sectionToRecordInputBlock(b), theme, expanded, setExpanded)}
+              {b.opts?.divider !== false && <Divider sx={{ my: '30px' }} light />}
             </Box>
           ) : (
-            recordBlock(b.block, theme, expanded, setExpanded)
+            recordBlock(sectionToRecordInputBlock(b), theme, expanded, setExpanded)
           ),
           {
             my: 0,
@@ -227,46 +230,66 @@ export const recordBlock: (
         );
 
       case 'ModalInputBlock':
-        return _withBreak(
+        const f = b.mode?.type === 'inline' ? _addSpacing : _withBreak;
+        return f(
           idx,
-          <Box>
-            {b.label && sectionLabel(b.label)}
-            {b.resultLabelLines && (
-              <Paper variant="outlined" sx={{ p: '15px', mt: '10px', mb: '3px' }}>
-                <Typography>
-                  {b.resultLabelLines.map((l, idx) => (
-                    <span key={idx}>
-                      {idx !== 0 && <br />}
-                      {l}
-                    </span>
-                  ))}
-                </Typography>
-              </Paper>
-            )}
-            <ModalView
-              openLabel={'View data'}
-              doneButton
-              sx={{ minWidth: '70%' }}
-              title={
-                b.modalLabelLines && (
-                  <Typography>
-                    {b.modalLabelLines.map((l, idx) => (
+          <Box sx={{ minWidth, maxWidth }}>
+            {label(b.label)}
+            <Box
+              sx={{
+                display: 'flex',
+                ...(b.mode?.type === 'inline'
+                  ? { flexDirection: 'row', alignItems: 'center' }
+                  : { flexDirection: 'column', alignItems: 'start' }),
+              }}
+            >
+              {b.mode?.type === 'inline' &&
+                b.mode.resultLabel &&
+                value(b.mode.resultLabel, {
+                  mt: '-3px',
+                  mr: '10px',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  flex: 1,
+                })}
+              {b.mode?.type === 'multiline' && b.mode.resultLabelLines && (
+                <Paper variant="outlined" sx={{ p: '15px', mt: '8px', mb: '10px' }}>
+                  <Typography sx={{ mb: '5px' }}>
+                    {b.mode.resultLabelLines.map((l, idx) => (
                       <span key={idx}>
                         {idx !== 0 && <br />}
                         {l}
                       </span>
                     ))}
                   </Typography>
-                )
-              }
-            >
-              {recordBlock(
-                b.template(b.value, () => {}),
-                theme,
-                expanded,
-                setExpanded
+                </Paper>
               )}
-            </ModalView>
+              <Modal
+                openLabel={'View data'}
+                primaryButton={{ label: 'Done' }}
+                sx={{ minWidth: '70%' }}
+                title={
+                  b.modalLabelLines && (
+                    <Typography>
+                      {b.modalLabelLines.map((l, idx) => (
+                        <span key={idx}>
+                          {idx !== 0 && <br />}
+                          {l}
+                        </span>
+                      ))}
+                    </Typography>
+                  )
+                }
+              >
+                {recordBlock(
+                  b.template(b.value, () => {}),
+                  theme,
+                  expanded,
+                  setExpanded
+                )}
+              </Modal>
+            </Box>
           </Box>
         );
 
@@ -386,6 +409,16 @@ export const recordBlock: (
               </SearchWrapper>
             ) : (
               value(null)
+            )}
+            {b.selectedSubtitleVisible && b.value?.subtitle && (
+              <Typography
+                sx={{
+                  fontSize: '12px',
+                  color: 'rgba(0, 0, 0, 0.6)',
+                }}
+              >
+                {b.value.subtitle}
+              </Typography>
             )}
           </Box>
         );

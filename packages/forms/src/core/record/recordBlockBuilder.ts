@@ -1,10 +1,20 @@
 import { Either, right } from 'fp-ts/lib/Either';
-import _ from 'lodash';
+import _, { PartialObject } from 'lodash';
 import { camelToSpaced, isType, mapLeafTypes, mapReduceLeafTypes, title } from '../../data';
 import { Block } from '../block';
 import { Dynamic, fromDyn, mapDynamic } from '../dynamic';
-import { CalculateProps, ReduceP, ReducePS, InputState, NestedInputBlock } from '../inputBlock';
+import {
+  CalculateProps,
+  InputState,
+  NestedInputBlock,
+  ReduceP,
+  ReducePS,
+  RenderProps,
+  StateProps,
+} from '../inputBlock';
+import { ModalInputBlock } from '../modalInputBlock';
 import { OutputBlock, _break } from '../outputBlock';
+import { SectionInputBlock } from '../sectionInputBlock';
 import { Invalid, invalid, Validator } from '../validator';
 import { RecordBlockInterpreter } from './recordBlockInterpreter';
 import {
@@ -18,7 +28,7 @@ import {
   RecordValid,
   RecordValidOrNull,
 } from './recordBlockTypes';
-import { RecordNestedInputBlock, SectionInputBlock } from './recordInputBlock';
+import { RecordNestedInputBlock } from './recordInputBlock';
 
 export const create = <R extends object = {}>() =>
   new RecordBlockBuilder<R, {}, []>({
@@ -47,6 +57,56 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
     return this.out(_break());
   }
 
+  keys() {
+    return this.apply.blocks.flatMap(b => {
+      if (b.tag === 'KeyedChildBlock') return [b.key];
+      else if (b.tag === 'SectionChildBlock') {
+        return b.keys;
+      }
+      return [];
+    });
+  }
+
+  sliceState(
+    state: StateProps<RecordPartialState<S>, any, any> | null,
+    keys: string[]
+  ): StateProps<Partial<RecordPartialState<S>>, any, any> | null {
+    if (state) {
+      return {
+        get: {
+          ...state.get,
+          partialState: _.pick(state.get.partialState, keys),
+          valid: _.pick(state.get.valid, keys),
+        },
+        set: x =>
+          state.set({
+            ...state,
+            ...x,
+            partialState: { ...state.get.partialState, ...x.partialState },
+            valid: { ...state.get.valid, ...x.valid },
+          }),
+      };
+    }
+    return null;
+  }
+
+  sliceRender(
+    state: RenderProps<
+      R,
+      RecordPartialState<S>,
+      any,
+      {
+        showErrors: boolean;
+      }
+    >,
+    keys: string[]
+  ): RenderProps<R, Partial<RecordPartialState<S>>, any, any> {
+    return {
+      ...state,
+      ...this.sliceState(state, keys),
+    };
+  }
+
   addSection<R_ extends object, E_ extends object, S_ extends any[]>(
     title: string,
     section: RecordDynamic<R, E, S, RecordBlockBuilder<R_, E_, S_>>,
@@ -61,6 +121,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
           const x = b.build(v => v);
           return {
             tag: 'SectionChildBlock',
+            keys: b.keys(),
             block: new NestedInputBlock<
               R_,
               true,
@@ -72,16 +133,57 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
             >({
               ...x.apply,
               block: g => ({
+                ...x.apply.block(g),
                 tag: 'SectionInputBlock',
-                divider: opts?.divider,
+                opts,
                 title,
-                block: x.apply.block(g),
               }),
             }),
           };
         })
       ),
     } as PartialRecordInputBlock<R & R_, Omit<E, RecordKeys<S_>> & E_, [...S, ...S_]>);
+  }
+
+  addModal<R_ extends object, S_ extends any[]>(
+    modal: RecordDynamic<
+      R,
+      E,
+      S,
+      NestedInputBlock<
+        R_,
+        true,
+        RecordPartialState<S_>,
+        RecordPartial<S_>,
+        RecordValid<S_>,
+        ModalInputBlock<S_, RecordValid<S_>>,
+        { showErrors: boolean }
+      >
+    >
+  ) {
+    return new RecordBlockBuilder<R & R_, E, [...S, ...S_]>({
+      ...this.apply,
+      blocks: this.apply.blocks.concat(
+        mapDynamic(modal, b => {
+          return {
+            tag: 'SectionChildBlock',
+            keys: b.keys,
+            block: new NestedInputBlock<
+              R_,
+              true,
+              RecordPartialState<S_>,
+              RecordPartial<S_>,
+              RecordValid<S_>,
+              ModalInputBlock<S_, RecordValid<S_>>,
+              { showErrors: boolean }
+            >({
+              ...b.apply,
+              block: g => b.apply.block(g),
+            }),
+          };
+        })
+      ),
+    } as PartialRecordInputBlock<R & R_, Omit<E, RecordKeys<S_>>, [...S, ...S_]>);
   }
 
   addBlocks<R_ extends object, E_ extends object, S_ extends any[]>(
@@ -94,6 +196,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
           const x = b.build(v => v);
           return {
             tag: 'SectionChildBlock',
+            keys: b.keys(),
             block: new NestedInputBlock<
               R_,
               true,
@@ -105,8 +208,8 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
             >({
               ...x.apply,
               block: g => ({
+                ...x.apply.block(g),
                 tag: 'SectionInputBlock',
-                block: x.apply.block(g),
               }),
             }),
           };
@@ -139,9 +242,11 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
       [[K, [Req, ReducePS<Type, PS>, ReduceP<Type, BP>, BV, Other, Type, Shape]], ...S]
     >({
       ...this.apply,
-      blocks: this.apply.blocks.concat(
-        mapDynamic(inputBlock, b => ({ tag: 'KeyedChildBlock', key, block: b }))
-      ),
+      blocks: this.apply.blocks.concat({
+        tag: 'KeyedChildBlock',
+        key,
+        block: inputBlock,
+      }),
     } as PartialRecordInputBlock<R_, K extends keyof E ? Omit<E, K> : E, [[K, [Req, ReducePS<Type, PS>, ReduceP<Type, BP>, BV, Other, Type, Shape]], ...S]>);
   }
 
@@ -237,7 +342,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
             }
 
             const seed_ = (seed as any)?.[unwrapped.key];
-            const st = unwrapped.block.apply.calculateState({
+            const st = fromDyn(dyn, unwrapped.block).apply.calculateState({
               req,
               seed: seed_ === undefined ? null : seed_,
               state: state_,
@@ -250,7 +355,11 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
               },
             };
           } else if (unwrapped.tag === 'SectionChildBlock') {
-            const st = unwrapped.block.apply.calculateState({ req, state, seed });
+            const st = unwrapped.block.apply.calculateState({
+              req,
+              state: this.sliceState(state, unwrapped.keys),
+              seed,
+            });
             return {
               edited: p.edited === true ? true : st.edited,
               partialState: {
@@ -299,7 +408,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
           blocks: this.apply.blocks.flatMap(b => {
             const unwrapped = fromDyn(dyn, b);
             if (unwrapped.tag === 'KeyedChildBlock') {
-              const block = unwrapped.block.apply.block({
+              const block = fromDyn(dyn, unwrapped.block).apply.block({
                 showErrors,
                 req: req,
                 get: (get.partialState as any)[unwrapped.key],
@@ -349,8 +458,10 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
                 return [];
               } else return [block];
             } else if (unwrapped.tag === 'SectionChildBlock') {
-              const block = unwrapped.block.apply.block({ req, set, get, showErrors });
-              if (block.block.visible === false) return [];
+              const block = unwrapped.block.apply.block(
+                this.sliceRender({ req, set, get, showErrors }, unwrapped.keys)
+              );
+              if (block.visible === false) return [];
               return [block];
             }
 
@@ -367,19 +478,24 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
 
 type PartialRecordInputBlock<R, E, S> = {
   tag: 'PartialRecordInputBlock';
-  blocks: RecordDynamic<R, E, S, PartialRecordInputChildBlock>[];
+  blocks: PartialRecordInputChildBlock<R, E, S>[];
 };
 
-type PartialRecordInputChildBlock = KeyedChildBlock | OutputChildBlock | SectionChildBlock;
-type KeyedChildBlock = {
+type PartialRecordInputChildBlock<R, E, S> =
+  | KeyedChildBlock<R, E, S>
+  | RecordDynamic<R, E, S, OutputChildBlock>
+  | RecordDynamic<R, E, S, SectionChildBlock>;
+
+type KeyedChildBlock<R, E, S> = {
   tag: 'KeyedChildBlock';
   key: string;
-  block: NestedInputBlock<any, any, any, any, any, any, any>;
+  block: RecordDynamic<R, E, S, NestedInputBlock<any, any, any, any, any, any, any>>;
 };
 
 type SectionChildBlock = {
   tag: 'SectionChildBlock';
-  block: NestedInputBlock<any, any, any, any, any, SectionInputBlock, any>;
+  keys: string[];
+  block: NestedInputBlock<any, any, any, any, any, any, any>;
 };
 
 type OutputChildBlock = {

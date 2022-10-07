@@ -8,7 +8,7 @@ export {
 export { default as ReactEditRecordInputBlock } from './react/edit/reactEditRecordInputBlock';
 export { default as ReactViewRecordInput } from './react/view/reactViewRecordInputBlock';
 export { default as ReactRecordInput } from './react/reactRecordInputBlock';
-export { RecordBlockInterpreter } from './record/recordBlockInterpreter';
+export { RecordBlockInterpreter, interpret } from './record/recordBlockInterpreter';
 export { useFormModal } from './react/modal';
 export { text, email } from './textInputBlock';
 export { number, percentage100 } from './numberInputBlock';
@@ -27,3 +27,4 @@ export { duration } from './durationInputBlock';
 export { date, year } from './dateInputBlock';
 export { value } from './valueInputBlock';
 export { type Invalid } from './validator';
+export { default as Example } from './example/component';

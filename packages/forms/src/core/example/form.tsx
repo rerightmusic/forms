@@ -5,6 +5,7 @@ export enum TagType {
   TypeA = 'TypeA',
   TypeB = 'TypeB',
   TypeC = 'TypeC',
+  TypeD = 'TypeD',
 }
 
 const Form = F.create()
@@ -177,19 +178,76 @@ const Form = F.create()
         })
         .map(x => ({ value: x as TagType, label: x })),
       ({ type }) =>
-        Promise.resolve(
-          right(
-            [...Array(20).keys()].map(idx => ({
-              id: idx.toString(),
-              type,
-              tag: `Tag${type}_${idx}`,
-            }))
-          )
-        ),
+        type === TagType.TypeD
+          ? Promise.resolve(right([]))
+          : new Promise(res =>
+              setTimeout(
+                () =>
+                  res(
+                    right(
+                      [...Array(20).keys()].map(idx => ({
+                        id: idx.toString(),
+                        type,
+                        tag: `Tag${type}_${idx}`,
+                      }))
+                    )
+                  ),
+                1500
+              )
+            ),
       b => b.required(),
       {
         minItems: 1,
       }
+    )
+  )
+  .add(
+    'modal',
+    F.modal(
+      'Modal',
+      F.create()
+        .add(
+          'modal_key1',
+          F.text('Modal Text 1', v => v)
+        )
+        .add(
+          'modal_key2',
+          F.text('Modal Text 2', v => v)
+        ),
+      F.dyn(r => ({
+        modalLabelLines: ['Modal Label'],
+        mode: {
+          type: 'multiline',
+          resultLabelLines: [
+            `Key1: ${r.valid.modal_key1 || ''}`,
+            `Key2: ${r.valid.modal_key2 || ''}`,
+          ],
+        },
+      }))
+    )
+  )
+  .add(
+    'inline_modal',
+    F.modal(
+      'Inline Modal',
+      F.create()
+        .add(
+          'modal_key1',
+          F.text('Modal Text 1', v => v)
+        )
+        .add(
+          'modal_key2',
+          F.text('Modal Text 2', v => v)
+        ),
+      F.dyn(r => ({
+        modalLabelLines: ['Modal Label'],
+        mode: {
+          type: 'inline',
+          resultLabel: `Key1: ${r.valid.modal_key1 || 'missing'} Key2: ${
+            r.valid.modal_key2 || 'missing'
+          }`,
+        },
+      }))
     )
   )
   .add(

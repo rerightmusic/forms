@@ -1,11 +1,11 @@
 import { createTheme, ThemeProvider } from '@mui/material';
-import Component from '../component';
+import * as F from 'forms';
 
 const Example = () => {
   return (
     <ThemeProvider theme={createTheme({})}>
       <div suppressHydrationWarning>
-        <Component />
+        <F.Example />
       </div>
     </ThemeProvider>
   );

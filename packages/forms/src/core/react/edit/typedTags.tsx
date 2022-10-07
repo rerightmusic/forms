@@ -1,9 +1,20 @@
-import { Autocomplete, Box, Chip, Paper, TextField, Typography, useTheme } from '@mui/material';
+import {
+  Autocomplete,
+  IconButton,
+  Box,
+  Chip,
+  Paper,
+  TextField,
+  Typography,
+  useTheme,
+  Divider,
+} from '@mui/material';
 import { Either } from 'fp-ts/lib/Either';
 import { useEffect, useState } from 'react';
 import { Loader } from '../../../loaders';
 import _ from 'lodash';
 import AddCircle from '@mui/icons-material/AddCircle';
+import Close from '@mui/icons-material/Close';
 
 export type PartialTypedTag<T extends string> = {
   id?: string;
@@ -22,7 +33,7 @@ const TypedTags = <T extends string>({
   label,
   types,
   value,
-  selectedType,
+  initialSelectedType,
   onSearch,
   onChange,
   required,
@@ -34,7 +45,7 @@ const TypedTags = <T extends string>({
   label: string;
   types: { label: string; value: T }[];
   value?: PartialTypedTag<T>[];
-  selectedType?: { label: string; value: T };
+  initialSelectedType?: T;
   width?: string;
   allowNewTags?: boolean;
   onChange?: (tags: PartialTypedTag<T>[]) => void;
@@ -50,17 +61,25 @@ const TypedTags = <T extends string>({
     textValue: string;
     cancelLastRequest: () => void;
     selectedType: { label: string; value: T };
+    mounted: boolean;
   }>({
+    mounted: false,
     textValue: '',
     filteredOptions: [],
     options: [],
     loading: false,
     value: value || [],
-    selectedType: selectedType || types[0],
+    selectedType:
+      (initialSelectedType && types.find(t => t.value === initialSelectedType)) || types[0],
     open: false,
     otherError: '',
     cancelLastRequest: () => {},
   });
+
+  useEffect(() => {
+    setState(s => ({ ...s, mounted: true }));
+    return () => {};
+  }, []);
 
   const theme = useTheme();
 
@@ -137,6 +156,9 @@ const TypedTags = <T extends string>({
     )
       changeValue(orderedValue || [], false);
   }, [value]);
+
+  const newTagBeingAdded =
+    state.textValue.length > 0 && allowNewTags !== false && state.filteredOptions.length === 0;
 
   return (
     <>
@@ -292,69 +314,104 @@ const TypedTags = <T extends string>({
             />
           ))}
         </Box>
-        {state.loading && (
-          <Box sx={{ width: '100%', height: '70px', position: 'relative' }}>
-            <Loader color={theme.palette.primary.main} loader="pulse-out" />
-          </Box>
-        )}
-        {state.textValue.length > 0 && allowNewTags !== false && (
-          <Box sx={{ mb: '10px', display: 'flex', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '13px', mr: '5px' }}>
-              Press Enter or click to add
-            </Typography>
-            <Chip
-              variant="outlined"
-              onClick={() => {
-                addValue({ type: state.selectedType.value, tag: state.textValue });
-              }}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Chip
-                    variant="filled"
-                    color="secondary"
-                    label={state.selectedType.label}
-                    sx={{
-                      mr: '5px',
-                      borderRadius: '16px 0 0 16px',
-                      fontSize: '12px',
-                      '& > .MuiChip-label': {
-                        px: '7px',
-                      },
-                      cursor: 'pointer',
-                    }}
-                  />
-                  <Typography sx={{ fontSize: '13px' }}>{state.textValue}</Typography>
-                </Box>
-              }
-              sx={{
-                background: 'white',
-                '& > .MuiChip-label': {
-                  paddingLeft: '0px',
-                },
-              }}
-            />
-          </Box>
-        )}
+        <Divider sx={{ mx: '-10px' }} />
         <Box
           sx={{
-            overflow: 'auto',
-            maxHeight: '180px',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '180px',
             mx: '-3px',
             position: 'relative',
-            pt: '10px',
+            overflow: 'auto',
           }}
         >
-          {state.filteredOptions.map(tag => (
-            <Chip
-              key={tag.tag}
-              sx={{ m: '3px', minWidth: '70px', cursor: 'pointer' }}
-              variant="outlined"
-              label={tag.tag}
-              onClick={() => {
-                addValue(tag);
+          {newTagBeingAdded && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                flex: 1,
               }}
-            />
-          ))}
+            >
+              <Typography sx={{ fontSize: '15px', mr: '5px' }}>
+                Press Enter or click to add
+              </Typography>
+              <Box sx={{ display: 'flex', mt: '8px', alignItems: 'center' }}>
+                <Chip
+                  variant="outlined"
+                  onClick={() => {
+                    addValue({ type: state.selectedType.value, tag: state.textValue });
+                  }}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Chip
+                        variant="filled"
+                        color="secondary"
+                        label={state.selectedType.label}
+                        sx={{
+                          mr: '5px',
+                          borderRadius: '16px 0 0 16px',
+                          fontSize: '12px',
+                          '& > .MuiChip-label': {
+                            px: '7px',
+                          },
+                          cursor: 'pointer',
+                        }}
+                      />
+                      <Typography sx={{ fontSize: '13px' }}>{state.textValue}</Typography>
+                    </Box>
+                  }
+                  sx={{
+                    background: 'white',
+                    '& > .MuiChip-label': {
+                      paddingLeft: '0px',
+                    },
+                  }}
+                />
+                <IconButton
+                  sx={{ ml: '5px' }}
+                  onClick={() => setState(s => ({ ...s, textValue: '' }))}
+                >
+                  <Close />
+                </IconButton>
+              </Box>
+            </Box>
+          )}
+          {!newTagBeingAdded && (state.loading || state.filteredOptions.length === 0) && (
+            <Box sx={{ flex: 1, justifyItems: 'center', alignItems: 'center', display: 'flex' }}>
+              {state.loading ? (
+                <Loader color={theme.palette.primary.main} loader="pulse-out" />
+              ) : (
+                <Typography
+                  sx={{
+                    color: 'gray',
+                    textAlign: 'center',
+                    flex: 1,
+                  }}
+                >
+                  No tags found
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {!newTagBeingAdded && !state.loading && state.filteredOptions.length > 0 && (
+            <Box sx={{ pt: '10px' }}>
+              {state.filteredOptions.map(tag => (
+                <Chip
+                  key={tag.tag}
+                  sx={{ m: '3px', minWidth: '70px', cursor: 'pointer' }}
+                  variant="outlined"
+                  label={tag.tag}
+                  onClick={() => {
+                    addValue(tag);
+                  }}
+                />
+              ))}
+            </Box>
+          )}
         </Box>
       </Paper>
     </>
