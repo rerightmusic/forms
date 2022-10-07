@@ -11,6 +11,7 @@ export { default as ReactRecordInput } from './react/reactRecordInputBlock';
 export { RecordBlockInterpreter, interpret } from './record/recordBlockInterpreter';
 export { useFormModal } from './react/modal';
 export { text, email } from './textInputBlock';
+export { boolean } from './booleanInputBlock';
 export { number, percentage100 } from './numberInputBlock';
 export { select } from './selectInputBlock';
 export { multiSelect } from './multiSelectInputBlock';

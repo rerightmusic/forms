@@ -35,6 +35,10 @@ const Form = F.create()
     )
   )
   .add(
+    'flag',
+    F.boolean('Flag', v => v)
+  )
+  .add(
     'record',
     F.dyn(v =>
       F.record(b =>

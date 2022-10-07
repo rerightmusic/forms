@@ -14,6 +14,7 @@ const Example = () => {
         client="client"
         value={{
           name: 'a',
+          flag: true,
           list: [
             { list_item: 'abc', list_item2: 'def' },
             { list_item: 'abc', list_item2: 'def' },
@@ -63,6 +64,7 @@ const Example = () => {
         value={{
           name: 'a',
           age: 11,
+          flag: true,
           list: [
             { list_item: 'abc', list_item2: 'def' },
             { list_item: 'abc', list_item2: 'def' },

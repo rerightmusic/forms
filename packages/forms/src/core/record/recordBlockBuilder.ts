@@ -82,8 +82,8 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
           state.set({
             ...state,
             ...x,
-            partialState: { ...state.get.partialState, ...x.partialState },
-            valid: { ...state.get.valid, ...x.valid },
+            partialState: _.merge(state.get.partialState, x.partialState),
+            valid: _.merge(state.get.valid, x.valid),
           }),
       };
     }

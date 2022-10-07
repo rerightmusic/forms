@@ -1,7 +1,17 @@
 import LaunchIcon from '@mui/icons-material/Launch';
 import TransitEnterexitIcon from '@mui/icons-material/TransitEnterexit';
 import Visibility from '@mui/icons-material/Visibility';
-import { Box, Chip, Divider, FormGroup, IconButton, Paper, Theme, Typography } from '@mui/material';
+import {
+  Box,
+  Chip,
+  Divider,
+  FormGroup,
+  IconButton,
+  Paper,
+  Switch,
+  Theme,
+  Typography,
+} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { SxProps } from '@mui/system';
 import { format } from 'date-fns';
@@ -119,6 +129,15 @@ export const recordBlock: (
                 {suffix}
               </Box>
             );
+
+      case 'BooleanInputBlock':
+        return _addSpacing(
+          idx,
+          <Box sx={{ minWidth, maxWidth }}>
+            {label(b.label)}
+            <Switch sx={{ ml: '-8px' }} readOnly checked={b.value === null ? undefined : b.value} />
+          </Box>
+        );
       case 'DateInputBlock':
         return _addSpacing(
           idx,

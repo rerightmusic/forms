@@ -27,6 +27,7 @@ import { reactSearchInputBlock } from './reactSearchInputBlock';
 import { reactSelectInputBlock } from './reactSelectInputBlock';
 import { reactTagsInputBlock } from './reactTagsInputBlock';
 import { reactTextInputBlock } from './reactTextInputBlock';
+import { reactBooleanInputBlock } from './reactBooleanInputBlock';
 import { reactToggleInputBlock } from './reactToggleInputBlock';
 import { reactTypedTagsInputBlock } from './reactTypedTagsInputBlock';
 import { reactValueInputBlock } from './reactValueInputBlock';
@@ -392,6 +393,9 @@ export const recordBlock: (
     switch (b.tag) {
       case 'TextInputBlock':
         return reactTextInputBlock(b, idx);
+
+      case 'BooleanInputBlock':
+        return reactBooleanInputBlock(b, idx);
 
       case 'RecordInputBlock':
         return withBreak(idx, recordBlock(b, theme, { p: 0 }));

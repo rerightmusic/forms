@@ -1,4 +1,5 @@
 import { Either } from 'fp-ts/lib/Either';
+import { BooleanInputBlock } from './booleanInputBlock';
 import { DateInputBlock } from './dateInputBlock';
 import { DurationInputBlock } from './durationInputBlock';
 import { ListInputBlock } from './listInputBlock';
@@ -103,6 +104,7 @@ export type StateProps<PS, V, Other> = {
 export type InputBlock =
   | ListInputBlock<any, any>
   | TextInputBlock
+  | BooleanInputBlock
   | RecordInputBlock
   | NumberInputBlock
   | TagsInputBlock
