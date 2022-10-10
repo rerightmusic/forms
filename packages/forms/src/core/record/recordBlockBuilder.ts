@@ -1,5 +1,5 @@
 import { Either, right } from 'fp-ts/lib/Either';
-import _, { PartialObject } from 'lodash';
+import _ from 'lodash';
 import { camelToSpaced, isType, mapLeafTypes, mapReduceLeafTypes, title } from '../../data';
 import { Block } from '../block';
 import { Dynamic, fromDyn, mapDynamic } from '../dynamic';
@@ -69,25 +69,9 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
 
   sliceState(
     state: StateProps<RecordPartialState<S>, any, any> | null,
-    keys: string[]
-  ): StateProps<Partial<RecordPartialState<S>>, any, any> | null {
-    if (state) {
-      return {
-        get: {
-          ...state.get,
-          partialState: _.pick(state.get.partialState, keys),
-          valid: _.pick(state.get.valid, keys),
-        },
-        set: x =>
-          state.set({
-            ...state,
-            ...x,
-            partialState: _.merge(state.get.partialState, x.partialState),
-            valid: _.merge(state.get.valid, x.valid),
-          }),
-      };
-    }
-    return null;
+    _keys: string[]
+  ): StateProps<RecordPartialState<S>, any, any> | null {
+    return state as any;
   }
 
   sliceRender(
