@@ -37,7 +37,6 @@ const TypedTags = <T extends string>({
   onSearch,
   onChange,
   required,
-  width,
   allowNewTags,
 }: {
   error?: string;
@@ -46,7 +45,6 @@ const TypedTags = <T extends string>({
   types: { label: string; value: T }[];
   value?: PartialTypedTag<T>[];
   initialSelectedType?: T;
-  width?: string;
   allowNewTags?: boolean;
   onChange?: (tags: PartialTypedTag<T>[]) => void;
   onSearch: (props: { keywords?: string; type: T }) => Promise<Either<string, TypedTag<T>[]>>;
@@ -137,7 +135,7 @@ const TypedTags = <T extends string>({
     return () => cancel();
   }, [state.selectedType]);
 
-  const _width = width || '420px';
+  const _width = '420px';
 
   useEffect(() => {
     const orderedValue = _.sortBy(value, i => {

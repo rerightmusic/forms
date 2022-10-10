@@ -96,7 +96,7 @@ const Text = ({ b, sx }: { b: TextInputBlock; sx?: SxProps<Theme> }) => {
       onChange={ev => b.onChange(ev.target.value)}
       label={b.label}
       sx={mergeSx(sx, theme => ({
-        width: '320px',
+        width: b.long === true ? '420px' : '320px',
         [theme.breakpoints.only('xs')]: { width: '100%' },
         '&.MuiTextField-root': { m: 0 },
         '& .MuiOutlinedInput-input': { textOverflow: 'ellipsis', overflow: 'hidden' },

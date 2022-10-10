@@ -20,13 +20,11 @@ const Tags = ({
   onChange,
   required,
   selectFrom,
-  width,
 }: {
   error?: string;
   required?: boolean;
   label: string;
   value?: Tag[];
-  width?: string;
   selectFrom?: { tags: TagsResult[]; freeForm: boolean; exposeOptions?: boolean };
   onChange?: (tags: Tag[]) => void;
   onSearch: (keywords: string) => Promise<Either<string, TagsResult[]>>;
@@ -51,7 +49,7 @@ const Tags = ({
     cancelLastRequest: () => {},
   });
 
-  const _width = width || '320px';
+  const _width = '420px';
 
   useEffect(() => {
     value !== state.value &&

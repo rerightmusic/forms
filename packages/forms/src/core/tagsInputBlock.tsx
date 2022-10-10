@@ -13,7 +13,6 @@ export function tags<R, Req extends boolean, V>(
   opts?: Dynamic<
     Tag[] | null,
     {
-      width?: string;
       minItems?: number;
       maxItems?: number;
       selectFrom?: { tags: TagsResult[]; freeForm: boolean };
@@ -58,7 +57,6 @@ export function tags<R, Req extends boolean, V>(
         required: validation._required,
         error: withError(validation.validate(get.partialState), get.edited, showErrors),
         selectFrom: opts_?.selectFrom,
-        width: opts_?.width,
         onSearch,
         onChange: v => {
           const validation = getValidation(v);
@@ -81,7 +79,6 @@ export type TagsInputBlock = {
   required: boolean;
   error: string;
   label: string;
-  width?: string;
   value: Tag[] | null;
   selectFrom?: { tags: TagsResult[]; freeForm: boolean };
   onSearch: (keywords: string) => Promise<Either<string, TagsResult[]>>;

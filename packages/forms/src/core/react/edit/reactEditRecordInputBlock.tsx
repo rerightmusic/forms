@@ -50,6 +50,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       submit?: SubmitProps<V>;
       onChange?: (s: RecordState<S, V>, p: RecordPartial<S>, v: V | null) => void;
       clearButton?: boolean;
+      clearOnChanged?: string;
       onClear?: () => void;
       sx?: SxProps<Theme>;
     } & R
@@ -74,7 +75,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       loading: false,
       submissionState: { error: '', success: false },
       mounted: false,
-      value: getPartial(initialState),
+      initialValue: value,
     });
 
     useEffect(() => {
@@ -82,7 +83,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       // rerender of the whole component containing the form which results for this to be called which resets the form to the
       // previous state. This means if a submit causes an error the first time the form resets to the previous value.
       // An easy way to test this is by removing the email validation from the textInputBlock and submitting an invalid email
-      if (!_.isEqual(value, state.value)) {
+      if (!_.isEqual(value, state.initialValue)) {
         const calc = block.apply.calculateState({
           req: other as any,
           state: null,
@@ -91,18 +92,17 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
         setState(s => ({
           ...s,
           data: calc,
-          value: getPartial(calc),
         }));
       }
       return () => {};
     }, [value]);
 
     useEffect(() => {
-      if (!_.isEqual(state.value, value)) {
+      if (!_.isEqual(getPartial(state.data), value)) {
         props.onChange &&
           props.onChange(
             state.data,
-            state.value,
+            getPartial(state.data),
             state.data.valid._tag === 'Right' ? state.data.valid.right : null
           );
       }
@@ -130,12 +130,27 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
         setState(s => ({
           ...s,
           data: d,
-          value: getPartial(d),
           submissionState: { ...s.submissionState, error: '' },
         }));
       },
       showErrors: false,
     });
+
+    const clear = () => {
+      setState(s => ({
+        ...s,
+        data: block.apply.calculateState({
+          req: other as any,
+          state: null,
+          seed: null,
+        }),
+      }));
+      props.onClear && props.onClear();
+    };
+
+    useEffect(() => {
+      if (props.clearOnChanged !== undefined) clear();
+    }, [props.clearOnChanged]);
 
     useLeavePageConfirm(state.data.edited);
 
@@ -281,20 +296,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
               {submit?.label || 'Save'}
             </LoadingButton>
             {props.clearButton === true && (
-              <Button
-                sx={{ minWidth: '100px' }}
-                onClick={() => {
-                  setState(s => ({
-                    ...s,
-                    data: block.apply.calculateState({
-                      req: other as any,
-                      state: null,
-                      seed: null,
-                    }),
-                  }));
-                  props.onClear && props.onClear();
-                }}
-              >
+              <Button sx={{ minWidth: '100px' }} onClick={clear}>
                 Clear
               </Button>
             )}

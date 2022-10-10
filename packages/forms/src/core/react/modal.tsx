@@ -31,7 +31,9 @@ export const useFormModal = <R extends object, S extends any[]>(
           onClear?: () => void;
         } & R
       ) => {
-        const [state, setState] = useState<{ valid: RecordValid<S> | null }>({
+        const [state, setState] = useState<{
+          valid: RecordValid<S> | null;
+        }>({
           valid: null,
         });
 
@@ -50,10 +52,7 @@ export const useFormModal = <R extends object, S extends any[]>(
               },
             }}
             secondaryButton={{
-              label: 'Clear',
-              onClick: f => {
-                f('open');
-              },
+              label: 'Back',
             }}
           >
             <Form

@@ -14,7 +14,6 @@ export const reactTypedTagsInputBlock = <T extends string>(
       value={b.value || undefined}
       onSearch={b.onSearch}
       label={b.label}
-      width={b.width}
       allowNewTags={b.allowNewTags}
       required={b.required}
       onChange={b.onChange}

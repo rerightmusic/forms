@@ -10,7 +10,6 @@ export const reactTagsInputBlock = (b: TagsInputBlock, idx: number) => {
       value={b.value || undefined}
       onSearch={b.onSearch}
       label={b.label}
-      width={b.width}
       required={b.required}
       onChange={b.onChange}
       selectFrom={b.selectFrom}

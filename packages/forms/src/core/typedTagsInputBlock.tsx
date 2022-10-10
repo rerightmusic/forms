@@ -16,7 +16,6 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
   opts?: Dynamic<
     PartialTypedTag<T>[] | null,
     {
-      width?: string;
       minItems?: number;
       maxItems?: number;
       allowNewTags?: boolean;
@@ -68,7 +67,6 @@ export function typedTags<T extends string, R, Req extends boolean, V>(
         value: get.partialState || null,
         required: validation._required,
         error: withError(validation.validate(get.partialState), get.edited, showErrors),
-        width: opts_?.width,
         allowNewTags: opts_?.allowNewTags,
         onSearch,
         onChange: v => {
@@ -92,7 +90,6 @@ export type TypedTagsInputBlock<T extends string> = {
   error: string;
   label: string;
   types: { label: string; value: T }[];
-  width?: string;
   allowNewTags?: boolean;
   value: PartialTypedTag<T>[] | null;
   onChange: (v: PartialTypedTag<T>[]) => void;

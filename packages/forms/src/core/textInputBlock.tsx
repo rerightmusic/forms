@@ -12,6 +12,7 @@ export function text<R, Req extends boolean, V>(
   opts?: Dynamic<
     string | null,
     {
+      long?: boolean;
       visible?: boolean;
       ignore?: boolean;
       multiline?: boolean;
@@ -54,6 +55,7 @@ export function text<R, Req extends boolean, V>(
         visible: opts_?.visible,
         fetchButton: opts_?.fetchButton,
         suffixImage: opts_?.suffixImage,
+        long: opts_?.long,
         onChange: (v: string) => {
           const validation = getValidation(v);
           const val = v ? v : null;
@@ -106,6 +108,7 @@ export type TextInputBlock = {
   required: boolean;
   error: string;
   label: string;
+  long?: boolean;
   value: string | null;
   visible?: boolean;
   multiline?: boolean;
