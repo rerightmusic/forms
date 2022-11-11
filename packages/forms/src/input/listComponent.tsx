@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Paper, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TextError } from '../error';
 
 export type ListComponentProps<T> = {
@@ -13,13 +13,14 @@ export type ListComponentProps<T> = {
   };
   addLabel?: string;
   itemLabel?: string;
+  createEmpty?: number;
   value?: T[];
   required?: boolean;
   outlined?: boolean;
   noinline?: boolean;
   buildEmptyValue: () => T;
   template: (data: T, onChange: (data: T) => void, idx: number) => React.ReactNode;
-  onChange: (data: T[]) => void;
+  onChange: (data: T[], change: { type: 'edit' | 'delete' | 'add'; value?: T }) => void;
 };
 
 const ListComponent = <T,>({
@@ -28,6 +29,7 @@ const ListComponent = <T,>({
   labelButton,
   addLabel,
   itemLabel,
+  createEmpty,
   required,
   template,
   error,
@@ -37,6 +39,11 @@ const ListComponent = <T,>({
   onChange,
   buildEmptyValue,
 }: ListComponentProps<T>) => {
+  useEffect(() => {
+    if (createEmpty && createEmpty > 0 && value.length === 0) {
+      onChange(new Array(createEmpty).fill(buildEmptyValue()), { type: 'add' });
+    }
+  }, []);
   const [deleted, setDeleted] = useState(new Set<number>());
   const deleteId = (id: number) => {
     setDeleted(new Set([...deleted, id]));
@@ -64,7 +71,8 @@ const ListComponent = <T,>({
           value
             .slice(0, idx)
             .concat([currItemData])
-            .concat(value.slice(idx + 1))
+            .concat(value.slice(idx + 1)),
+          { type: 'edit', value: currItemData }
         );
       },
       idx
@@ -117,7 +125,10 @@ const ListComponent = <T,>({
             }}
             onClick={() => {
               deleteId(itemValue.id);
-              onChange(dataAndIds.filter(v => v.id !== itemValue.id).map(x => x.value));
+              onChange(
+                dataAndIds.filter(v => v.id !== itemValue.id).map(x => x.value),
+                { type: 'delete' }
+              );
             }}
           >
             <CloseIcon sx={{ fontSize: '20px' }} />
@@ -169,7 +180,7 @@ const ListComponent = <T,>({
       )}
       {error && <TextError sx={{ mt: '10px' }}>{error}</TextError>}
       <Button
-        onClick={() => onChange(value.concat(buildEmptyValue()))}
+        onClick={() => onChange(value.concat(buildEmptyValue()), { type: 'add' })}
         sx={{ ml: '-8px', mt: '5px' }}
       >
         {addLabel || 'Add'}

@@ -57,6 +57,7 @@ const SearchInput = <T,>({
   margin,
   isEqual,
   optionSx,
+  hideErrorMessage,
 }: {
   createNew?: (value: string) => { label: string; onClick: () => void }[];
   sx?: SxProps<Theme>;
@@ -79,6 +80,7 @@ const SearchInput = <T,>({
     | ((selected: SearchValue<T>) => string);
   onSearch: (keywords: string) => Promise<Either<string, SearchValue<T>[]>>;
   optionSx?: SxProps<Theme>;
+  hideErrorMessage?: boolean;
 }) => {
   const onSelectedHref_ = onSelectedHref
     ? {
@@ -340,9 +342,11 @@ const SearchInput = <T,>({
           required={required}
           error={!!error || !!state.otherError}
           helperText={
-            error ||
-            state.otherError ||
-            (selectedSubtitleVisible === true && state.selected?.subtitle)
+            hideErrorMessage !== true
+              ? error ||
+                state.otherError ||
+                (selectedSubtitleVisible === true && state.selected?.subtitle)
+              : ''
           }
           {...params}
           fullWidth
@@ -352,7 +356,7 @@ const SearchInput = <T,>({
             },
             '& > .MuiInputBase-root': {
               '&.MuiOutlinedInput-root': {
-                paddingRight: readonly ? '9px' : '33px',
+                paddingRight: '15px',
               },
               ...(margin === 'dense'
                 ? {
@@ -374,6 +378,9 @@ const SearchInput = <T,>({
             '& .MuiAutocomplete-clearIndicator': {
               visibility: 'initial',
             },
+            '& .MuiAutocomplete-endAdornment': {
+              position: 'initial',
+            },
           }}
           label={label}
           placeholder={placeholder}
@@ -381,8 +388,19 @@ const SearchInput = <T,>({
             ...params.InputProps,
             startAdornment: createFromText ? null : <SearchIcon />,
             endAdornment: (
-              <Box onClick={e => e.stopPropagation()}>
-                {state.loading && <CircularProgress color="inherit" size={20} />}
+              <Box
+                onClick={e => e.stopPropagation()}
+                sx={{
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  display: 'flex',
+                }}
+              >
+                {state.loading && (
+                  <Box sx={{ width: '20px', display: 'flex' }}>
+                    <CircularProgress color="inherit" size={17} />
+                  </Box>
+                )}
                 {state.selected && onSelected && (
                   <a
                     href={onSelectedHref_ ? onSelectedHref_.href(state.selected) : ''}
@@ -401,7 +419,9 @@ const SearchInput = <T,>({
                     </IconButton>
                   </a>
                 )}
-                {readonly !== true ? params.InputProps.endAdornment : null}
+                {readonly !== true && params.InputProps.endAdornment
+                  ? params.InputProps.endAdornment
+                  : null}
               </Box>
             ),
           }}

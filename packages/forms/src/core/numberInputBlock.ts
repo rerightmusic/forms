@@ -28,12 +28,17 @@ export function number<R, Req extends boolean, V>(
       false,
       v => {
         if (v !== null && v !== '') {
-          const fl = typeof v === 'string' ? parseFloat(v) : v;
+          const fl =
+            typeof v === 'string' && !isNaN(v as any)
+              ? parseFloat(v)
+              : typeof v === 'string'
+              ? NaN
+              : v;
           return !isNaN(fl) ? right(fl) : invalid('Not a number', 'always');
         }
         return right(v === '' ? null : v);
       },
-      p => p === null
+      p => p === null || p === ''
     ).chain(fromDyn(prov, validate));
 
   return new NestedInputBlock({

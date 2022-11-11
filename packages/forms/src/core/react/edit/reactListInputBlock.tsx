@@ -19,6 +19,7 @@ export const reactListInputBlock = (b: ListInputBlock<any, any>, idx: number, th
       buildEmptyValue={b.buildEmptyValue}
       addLabel={b.itemLabel ? `Add ${b.itemLabel}` : 'Add item'}
       itemLabel={b.itemLabel}
+      createEmpty={b.createEmpty}
       template={(data, onChange_) => {
         return recordBlock(b.template(data, onChange_), theme);
       }}

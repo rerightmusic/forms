@@ -1,6 +1,6 @@
 import { Either, right } from 'fp-ts/lib/Either';
 import _ from 'lodash';
-import { camelToSpaced, isType, mapLeafTypes, mapReduceLeafTypes, title } from '../../data';
+import { camelToSpaced, isTag, isType, mapLeafTypes, recurseReduce, title } from '../../data';
 import { Block } from '../block';
 import { Dynamic, fromDyn, mapDynamic } from '../dynamic';
 import {
@@ -69,9 +69,29 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
 
   sliceState(
     state: StateProps<RecordPartialState<S>, any, any> | null,
-    _keys: string[]
+    keys: string[]
   ): StateProps<RecordPartialState<S>, any, any> | null {
-    return state as any;
+    if (state) {
+      return {
+        get: {
+          ...state.get,
+          partialState: _.pick(state.get.partialState, keys),
+          valid: _.pick(state.get.valid, keys),
+        },
+        set: x => {
+          const newPartial = { ...state.get.partialState, ...x.partialState };
+          const valid = validateRecord(newPartial);
+
+          state.set({
+            ...state.get,
+            ...x,
+            partialState: newPartial,
+            valid: valid.valid,
+          });
+        },
+      };
+    }
+    return null;
   }
 
   sliceRender(
@@ -143,7 +163,13 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
         ModalInputBlock<S_, RecordValid<S_>>,
         { showErrors: boolean }
       >
-    >
+    >,
+    opts?: {
+      onChange: (
+        value: RecordPartialState<S_>,
+        state: RecordPartialState<[...S, ...S_]>
+      ) => RecordPartialState<[...S, ...S_]>;
+    }
   ) {
     return new RecordBlockBuilder<R & R_, E, [...S, ...S_]>({
       ...this.apply,
@@ -218,7 +244,15 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
     Shape
   >(
     key: K extends RecordKeys<S> ? never : K,
-    inputBlock: RecordDynamic<R, E, S, NestedInputBlock<R_, Req, PS, BP, BV, B, Other, Type, Shape>>
+    inputBlock: RecordDynamic<
+      R,
+      E,
+      S,
+      NestedInputBlock<R_, Req, PS, BP, BV, B, Other, Type, Shape>
+    >,
+    opts?: {
+      onChange: (value: PS, state: RecordPartialState<S>) => RecordPartialState<S>;
+    }
   ) {
     return new RecordBlockBuilder<
       R_,
@@ -229,6 +263,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
       blocks: this.apply.blocks.concat({
         tag: 'KeyedChildBlock',
         key,
+        onChange: opts?.onChange,
         block: inputBlock,
       }),
     } as PartialRecordInputBlock<R_, K extends keyof E ? Omit<E, K> : E, [[K, [Req, ReducePS<Type, PS>, ReduceP<Type, BP>, BV, Other, Type, Shape]], ...S]>);
@@ -289,7 +324,7 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
         validate
       )(
         new Validator<true, RecordPartialState<S>, RecordValid<S>>(true, v => {
-          return validateRecord(v);
+          return validateRecord(v).valid;
         })
       );
     };
@@ -316,12 +351,20 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
               const get_ = (state.get.partialState as any)?.[unwrapped.key];
               state_ = {
                 get: get_,
-                set: (x: any) =>
+                set: (x: any) => {
+                  let newState = { ...state!.get.partialState, [unwrapped.key]: x };
+                  if (unwrapped.onChange) {
+                    newState = unwrapped.onChange(x, {
+                      ...state!.get.partialState,
+                      [unwrapped.key]: x,
+                    });
+                  }
                   state!.set({
                     ...state!.get,
-                    partialState: { ...state!.get.partialState, [unwrapped.key]: x },
-                    valid: val.validate({ ...state!.get.partialState, [unwrapped.key]: x }),
-                  }),
+                    partialState: newState,
+                    valid: val.validate(newState),
+                  });
+                },
               };
             }
 
@@ -473,6 +516,7 @@ type PartialRecordInputChildBlock<R, E, S> =
 type KeyedChildBlock<R, E, S> = {
   tag: 'KeyedChildBlock';
   key: string;
+  onChange?: (value: any, state: RecordPartialState<S>) => RecordPartialState<S>;
   block: RecordDynamic<R, E, S, NestedInputBlock<any, any, any, any, any, any, any>>;
 };
 
@@ -497,54 +541,74 @@ type RecordDynamicProvided<R, E, S> = {
 
 type RecordDynamic<R, E, S, B> = Dynamic<RecordDynamicProvided<R, E, S>, B>;
 
-export const validateRecord = <S>(p: RecordPartialState<S>): Either<Invalid, RecordValid<S>> => {
-  const recurse: (x: any, pkey?: string) => { state: string[]; value: any } = (x, pkey) => {
-    return mapReduceLeafTypes(
-      x,
-      isType<InputState<any, any, any>>(
-        v => typeof v === 'object' && 'tag' in v && v.tag === 'InputState'
-      ),
-      [] as string[],
-      (v, state, key) => {
-        if (v.ignore === true) {
-          return { value: undefined, state };
-        }
-        if (v.valid._tag === 'Right') return { value: v.valid.right, state };
+export const printErrors = (errs: Record<string, any>) => {
+  return `Some fields are invalid: ${printErrors_(errs)}`;
+};
 
-        const key_ = `${pkey ? pkey : ''}${
-          !_.isNaN(parseInt(key.slice(1))) ? `:${key.slice(1)}` : title(camelToSpaced(key.slice(1)))
-        }`;
-        if (
-          v.partialState === null ||
-          v.partialState === undefined ||
-          (typeof v.partialState !== 'object' && !Array.isArray(v.partialState))
-        ) {
-          return {
-            value: undefined,
-            state: state.concat([key_]),
-          };
-        }
-
-        const errs = recurse(
-          v.partialState,
-          Array.isArray(v.partialState) ? key_ : undefined
-        ).state.join(', ');
-        return {
-          value: undefined,
-          state: Array.isArray(v.partialState)
-            ? state.concat(errs ? [errs] : [key_])
-            : state.concat(`${key_ && errs ? `${key_} · ${errs}` : key || errs}`),
-        };
-      }
-    );
-  };
-
-  const { state, value } = recurse(p);
-
-  if (state.length > 0) {
-    return invalid(`Some fields are invalid: ${state.join(', ')}`, 'edited');
+export const printErrors_ = (errs: any[] | Record<string, any> | string): string => {
+  if (_.isArray(errs)) {
+    return errs
+      .map((e, idx) => {
+        const err = printErrors_(e);
+        return `${idx}${err ? ` - ${err}` : ''}`;
+      })
+      .join(', ');
   }
-  return right(value);
+  if (_.isObject(errs)) {
+    return _.reduce(
+      errs,
+      (prev, next, key) => {
+        const err = printErrors_(next);
+        return prev.concat(`${title(camelToSpaced(key))}${err ? ` · ${err}` : ''}`);
+      },
+      [] as string[]
+    ).join(', ');
+  }
+  return '';
+};
+
+export const validateRecord = <S>(
+  p: RecordPartialState<S>
+): { valid: Either<Invalid, RecordValid<S>>; errors: Record<string, string> } => {
+  const { record: errors } = recurseReduce(
+    p,
+    {
+      if: isTag<InputState<unknown, unknown, unknown>>('InputState'),
+      recurse: x => (x.ignore ? undefined : x.partialState),
+    },
+    (_state, v, _, ignore) => {
+      const isIgnored =
+        (v._tag === 'Left' && v.left.parent.ignore === true) ||
+        (v._tag === 'Right' && v.right.ignore === true);
+      const res = v._tag === 'Left' ? v.left.parent.valid : v.right.valid;
+      return {
+        value: isIgnored ? ignore : res._tag === 'Left' ? res.left.error : ignore,
+        state: {},
+      };
+    },
+    {}
+  );
+
+  const { record: valid } = recurseReduce(
+    p,
+    { if: isTag<InputState<unknown, unknown, unknown>>('InputState') },
+    (_state, v, _, ignore) => {
+      const res = v._tag === 'Left' ? v.left.parent.valid : v.right.valid;
+      return {
+        value: res._tag === 'Right' ? res.right : ignore,
+        state: {},
+      };
+    },
+    {}
+  );
+
+  if (_.size(errors) > 0) {
+    return {
+      valid: invalid(printErrors(errors), 'edited'),
+      errors,
+    };
+  }
+  return { valid: right(valid as RecordValid<S>), errors };
 };
 
 export const getValidsOrNull = <S>(ps: RecordPartialState<S>) => {

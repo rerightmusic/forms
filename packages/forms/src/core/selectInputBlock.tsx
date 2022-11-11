@@ -16,6 +16,9 @@ export function select<R, Req extends boolean, V>(
       readonly?: boolean;
       chips?: boolean;
       inline?: boolean;
+      ignore?: boolean;
+      visible?: boolean;
+      short?: boolean;
     }
   >
 ): NestedInputBlock<R, Req, string | null, string | null, V, SelectInputBlock, {}> {
@@ -29,10 +32,12 @@ export function select<R, Req extends boolean, V>(
   return new NestedInputBlock({
     calculateState: ({ state, seed }) => {
       const validation = getValidation(state?.get.partialState || seed);
+      const opts_ = opts && fromDyn(state?.get.partialState || seed, opts);
       return {
         tag: 'InputState',
         partialState: state?.get.partialState || seed || validation._default,
         edited: state?.get.edited || false,
+        ignore: opts_?.ignore,
         valid: validation.validate(state?.get.partialState || seed || validation._default),
       };
     },
@@ -47,6 +52,8 @@ export function select<R, Req extends boolean, V>(
         readonly: opts_?.readonly,
         chips: opts_?.chips,
         inline: opts_?.inline,
+        visible: opts_?.visible,
+        short: opts_?.short,
         value:
           get.partialState && options_.find(o => o.value === get.partialState)
             ? get.partialState
@@ -84,4 +91,6 @@ export type SelectInputBlock = {
   readonly?: boolean;
   chips?: boolean;
   inline?: boolean;
+  visible?: boolean;
+  short?: boolean;
 };

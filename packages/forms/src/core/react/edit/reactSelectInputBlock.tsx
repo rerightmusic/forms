@@ -46,7 +46,7 @@ export const reactSelectInputBlock = (b: SelectInputBlock, idx: number) => {
         <InputLabel required={b.required}>{b.label}</InputLabel>
         <Select
           sx={theme => ({
-            width: '320px',
+            width: b.short === true ? '120px' : '320px',
             [theme.breakpoints.only('xs')]: { width: '100%' },
           })}
           readOnly={b.readonly}

@@ -9,6 +9,7 @@ import {
 } from './record/recordBlockBuilder';
 import {
   RecordPartial,
+  RecordPartialState,
   RecordState,
   RecordValid,
   RecordValidOrNull,
@@ -31,12 +32,17 @@ export function list<R extends object, Req extends boolean, S extends any[], V>(
     S,
     {
       minItems?: number;
+      createEmpty?: number;
       maxItems?: number;
       itemLabel?: string;
       visible?: boolean;
       outlined?: boolean;
       noinline?: boolean;
       ignore?: boolean;
+      onEdit?: (
+        item: RecordState<S, RecordValid<S>>,
+        state: RecordState<S, RecordValid<S>>[]
+      ) => RecordState<S, RecordValid<S>>[];
       copyFrom?: {
         state?: RecordState<S, RecordValid<S>>[];
         seed?: RecordPartial<S>[];
@@ -180,22 +186,32 @@ export function list<R extends object, Req extends boolean, S extends any[], V>(
         required: validation._required,
         value: get.partialState || null,
         visible: opts_?.visible,
+        createEmpty: opts_?.createEmpty,
         outlined: opts_?.outlined,
         noinline: opts_?.noinline,
         buildEmptyValue: () => template.apply.calculateState({ req, state: null, seed: null }),
         template: (value, onChange) => {
-          return template.apply.block({ req, get: value, set: onChange, showErrors });
+          return template.apply.block({
+            req,
+            get: value,
+            set: onChange,
+            showErrors,
+          });
         },
         itemLabel: opts_?.itemLabel,
         error: withError(validation.validate(get.partialState), get.edited, showErrors),
-        onChange: (v: RecordState<S, RecordValid<S>>[]) => {
-          const validation = getValidation(req, v);
+        onChange: (v, change) => {
+          let v_ = v;
+          if (opts_?.onEdit && change.value) {
+            v_ = opts_.onEdit(change.value, v);
+          }
+          const validation = getValidation(req, v_);
           set({
             ...get,
             tag: 'InputState',
             edited: true,
-            partialState: v,
-            valid: validation.validate(v),
+            partialState: v_,
+            valid: validation.validate(v_),
           });
         },
       };
@@ -214,13 +230,17 @@ type ListDynamic<R, S, B> = Dynamic<
 
 export type ListInputBlock<S extends any[], V> = {
   tag: 'ListInputBlock';
-  onChange: (v: RecordState<S, RecordValid<S>>[]) => void;
+  onChange: (
+    v: RecordState<S, RecordValid<S>>[],
+    change: { type: 'edit' | 'delete' | 'add'; value?: RecordState<S, RecordValid<S>> }
+  ) => void;
   error: string;
   label?: string;
   labelButton?: { label: string; onClick: () => void };
   value: RecordState<S, RecordValid<S>>[] | null;
   visible?: boolean;
   outlined?: boolean;
+  createEmpty?: number;
   noinline?: boolean;
   required?: boolean;
   itemLabel?: string;

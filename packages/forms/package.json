@@ -7,8 +7,10 @@
   "main": "dist/index.js",
   "scripts": {
     "setup": "yarn && yarn build",
-    "build": "yarn tsc",
+    "build": "yarn tsc -p tsconfig.build.json",
     "build:watch": "yarn build -w",
+    "compile:watch": "yarn tsc -w",
+    "test": "yarn jest",
     "dev": "yarn build:watch"
   },
   "peerDependencies": {
@@ -28,8 +30,8 @@
       "optional": true
     }
   },
-  "devDependencies": {
-    "@babel/core": "^7.0.0",
+  "dependencies": {
+    "@babel/core": "^7.20.2",
     "@emotion/react": "^11.6.0",
     "@emotion/styled": "^11.6.0",
     "@mui/icons-material": "^5.0.1",
@@ -37,17 +39,28 @@
     "@mui/material": "5.10.3",
     "date-fns": "^2.28.0",
     "fp-ts": "^2.11.5",
+    "jest": "^29.3.1",
     "lodash": "^4.17.21",
     "next": "^12.1.0",
-    "react-device-detect": "^2.2.2",
     "react": "^17.0.2",
+    "react-device-detect": "^2.2.2",
     "react-dom": "^17.0.2",
+    "react-use": "^17.4.0"
+  },
+  "devDependencies": {
+    "@types/date-fns": "^2.6.0",
+    "@types/jest": "^29.2.2",
+    "@types/lodash": "^4.14.188",
+    "@types/node": "^18.0.1",
     "@types/react": "^17.0.24",
     "@types/react-dom": "^17.0.11",
-    "react-use": "^17.4.0",
-    "@types/date-fns": "^2.6.0",
-    "@types/lodash": "^4.14.178",
-    "@types/node": "^18.0.1",
-    "typescript": "^4.8.2"
+    "ts-jest": "^29.0.3",
+    "typescript": "^4.8.4"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testPathIgnorePatterns": [
+      "./node_modules/"
+    ]
   }
 }

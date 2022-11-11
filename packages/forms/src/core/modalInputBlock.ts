@@ -1,11 +1,6 @@
 import { Dynamic, fromDyn } from './dynamic';
 import { NestedInputBlock } from './inputBlock';
-import {
-  create,
-  getPartial,
-  getValidsOrNull,
-  RecordBlockBuilder,
-} from './record/recordBlockBuilder';
+import { getPartial, getValidsOrNull, RecordBlockBuilder } from './record/recordBlockBuilder';
 import {
   RecordPartial,
   RecordPartialState,
@@ -23,6 +18,7 @@ export function modal<R extends object, S extends any[]>(
     S,
     {
       visible?: boolean;
+      ignore?: boolean;
       inline?: boolean;
       modalLabelLines?: string[];
       mode?:
@@ -54,16 +50,21 @@ export function modal<R extends object, S extends any[]>(
   ModalInputBlock<S, RecordValid<S>>,
   { showErrors: boolean }
 > {
-  const getDyn = (req: R, state: RecordPartialState<S>, partial?: RecordPartial<S>) => ({
+  const getDyn = (
+    req: R,
+    state: RecordPartialState<S> | null,
+    partial?: RecordPartial<S> | null
+  ) => ({
     req,
-    partial: partial ? partial : state ? getPartial(state) : null,
-    valid: state ? getValidsOrNull(state) : null,
+    partial: partial ? partial : state ? getPartial(state) : {},
+    valid: state ? getValidsOrNull(state) : {},
   });
 
   const template = b.build(v => v);
   return new NestedInputBlock(
     {
       calculateState: ({ req, state, seed }) => {
+        const opts_ = opts && fromDyn(getDyn(req, state?.get.partialState || null, seed), opts);
         const initialState = template.apply.calculateState({
           req,
           state: state
@@ -79,12 +80,12 @@ export function modal<R extends object, S extends any[]>(
         return {
           ...initialState,
           edited: state?.get.edited || false,
+          ignore: opts_?.ignore,
           valid: initialState.valid,
         };
       },
       block: ({ req, get, set, showErrors }) => {
         const opts_ = opts && fromDyn(getDyn(req, get.partialState), opts);
-
         return {
           tag: 'ModalInputBlock',
           value: get,
