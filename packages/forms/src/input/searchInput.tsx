@@ -319,7 +319,7 @@ const SearchInput = <T,>({
       onInputChange={ev => {
         if (ev) {
           const value = (ev.target as any).value || '';
-          if (value.length > 2 && value !== state.value) {
+          if (value.length > 0 && value !== state.value) {
             setState(s => ({
               ...s,
               value,

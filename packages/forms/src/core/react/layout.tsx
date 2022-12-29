@@ -1,5 +1,5 @@
 import { Box, Theme } from '@mui/material';
-import { SxProps, SystemStyleObject } from '@mui/system';
+import { SxProps } from '@mui/system';
 import { mergeSx } from '../../mui';
 
 export const addSpacing = (idx: number | string, el: React.ReactNode, sx?: SxProps<Theme>) => [

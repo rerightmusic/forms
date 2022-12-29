@@ -261,6 +261,14 @@ const Form = F.create()
       [
         { name: 'Option A', value: 'optionA' },
         { name: 'Option B', value: 'optionB' },
+        { name: 'Option C', value: 'optionC' },
+        { name: 'Option D', value: 'optionD' },
+        { name: 'Option E', value: 'optionE' },
+        { name: 'Option F', value: 'optionF' },
+        { name: 'Option G', value: 'optionG' },
+        { name: 'Option H', value: 'optionH' },
+        { name: 'Option I', value: 'optionI' },
+        { name: 'Option J', value: 'optionJ' },
       ],
       v => v
     )

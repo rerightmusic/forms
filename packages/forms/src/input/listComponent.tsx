@@ -20,7 +20,15 @@ export type ListComponentProps<T> = {
   noinline?: boolean;
   buildEmptyValue: () => T;
   template: (data: T, onChange: (data: T) => void, idx: number) => React.ReactNode;
-  onChange: (data: T[], change: { type: 'edit' | 'delete' | 'add'; value?: T }) => void;
+  onChange: (
+    data: T[],
+    change: {
+      type: 'edit' | 'delete' | 'add';
+      value: T;
+      idx: number;
+      prevState: T[];
+    }
+  ) => void;
 };
 
 const ListComponent = <T,>({
@@ -41,7 +49,12 @@ const ListComponent = <T,>({
 }: ListComponentProps<T>) => {
   useEffect(() => {
     if (createEmpty && createEmpty > 0 && value.length === 0) {
-      onChange(new Array(createEmpty).fill(buildEmptyValue()), { type: 'add' });
+      onChange(new Array(createEmpty).fill(buildEmptyValue()), {
+        type: 'add',
+        value: buildEmptyValue(),
+        idx: createEmpty - 1,
+        prevState: [],
+      });
     }
   }, []);
   const [deleted, setDeleted] = useState(new Set<number>());
@@ -72,7 +85,7 @@ const ListComponent = <T,>({
             .slice(0, idx)
             .concat([currItemData])
             .concat(value.slice(idx + 1)),
-          { type: 'edit', value: currItemData }
+          { type: 'edit', value: currItemData, idx, prevState: value }
         );
       },
       idx
@@ -127,7 +140,12 @@ const ListComponent = <T,>({
               deleteId(itemValue.id);
               onChange(
                 dataAndIds.filter(v => v.id !== itemValue.id).map(x => x.value),
-                { type: 'delete' }
+                {
+                  type: 'delete',
+                  value: itemValue.value,
+                  idx: itemValue.id,
+                  prevState: dataAndIds.map(x => x.value),
+                }
               );
             }}
           >
@@ -180,7 +198,15 @@ const ListComponent = <T,>({
       )}
       {error && <TextError sx={{ mt: '10px' }}>{error}</TextError>}
       <Button
-        onClick={() => onChange(value.concat(buildEmptyValue()), { type: 'add' })}
+        onClick={() => {
+          const value_ = buildEmptyValue();
+          onChange(value.concat(value_), {
+            type: 'add',
+            value: value_,
+            idx: value.length,
+            prevState: value,
+          });
+        }}
         sx={{ ml: '-8px', mt: '5px' }}
       >
         {addLabel || 'Add'}

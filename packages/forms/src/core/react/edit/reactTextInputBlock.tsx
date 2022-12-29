@@ -49,7 +49,6 @@ export const reactTextInputBlock = (b: TextInputBlock, idx: number, sx?: SxProps
                 }}
                 sx={theme => ({
                   width: '600px',
-                  [theme.breakpoints.only('xs')]: { width: '100%', boxSizing: 'border-box' },
                 })}
               >
                 <TextField

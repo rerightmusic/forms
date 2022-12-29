@@ -21,6 +21,7 @@ export const ReactRecordInput =
 
     return function ReactForm(
       props: {
+        afterTitle?: JSX.Element;
         value: RecordPartial<S>;
         submit?: SubmitProps<V>;
         editChildren?: React.ReactNode;
@@ -121,7 +122,7 @@ export const ReactRecordInput =
       if (state.mode === 'edit') {
         return (
           <Box sx={{ ...props.sx }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: '30px' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: '12px' }}>
               <Typography fontSize={'22px'}>{title}</Typography>
               <Button
                 sx={{ mt: '3px', ml: '15px', mr: '8px' }}

@@ -32,6 +32,7 @@ import { addSpacing, withBreak } from '../layout';
 const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlock<R, S, V>) => {
   return function ReactViewForm(
     props: {
+      afterTitle?: JSX.Element;
       value: RecordPartial<S>;
       sx?: SxProps<Theme>;
       title?: string;
@@ -54,8 +55,13 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
       showErrors: false,
     });
     return (
-      <Box sx={{ pl: '2px', ...sx }}>
-        {title && <Typography fontSize={'22px'}>{title}</Typography>}
+      <Box sx={sx}>
+        {title && (
+          <Typography fontSize={'22px'} sx={{ mb: '20px' }}>
+            {title}
+          </Typography>
+        )}
+        {props.afterTitle ? <Box sx={{ mb: '20px' }}>{props.afterTitle}</Box> : undefined}
         {recordBlock(rec, theme, expanded, setExpanded)}
       </Box>
     );
@@ -163,7 +169,7 @@ export const recordBlock: (
           idx,
           b.title ? (
             <Box sx={{ [theme.breakpoints.only('xs')]: { width: 'calc(100% - 30px)' } }}>
-              <Typography sx={{ color: 'gray', mb: '15px', fontSize: '20px' }}>
+              <Typography sx={{ color: 'gray', mb: '10px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
               {recordBlock(sectionToRecordInputBlock(b), theme, expanded, setExpanded)}

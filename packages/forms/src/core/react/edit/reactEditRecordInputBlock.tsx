@@ -53,6 +53,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
       clearOnChanged?: string;
       onClear?: () => void;
       sx?: SxProps<Theme>;
+      afterTitle?: JSX.Element;
     } & R
   ) {
     const { value, submit, ...other } = props;
@@ -175,7 +176,6 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
               : { flexDirection: 'column-reverse', alignItems: 'start' }),
             [theme.breakpoints.only('xs')]: {
               flexDirection: 'column-reverse',
-              alignItems: 'center',
               width: '100%',
             },
           })}
@@ -329,6 +329,7 @@ const ReactEditRecordInputBlock = <R, S extends any[], V>(
             {props.title}
           </Typography>
         )}
+        {props.afterTitle ? <Box sx={{ mb: '20px' }}>{props.afterTitle}</Box> : undefined}
         {recordBlock(rec, theme)}
         {submit && submit.footer !== true && submit.hideSubmitButton !== true && (
           <Box sx={{ mt: '30px' }}>{submitButton(submit)}</Box>
@@ -407,7 +408,7 @@ export const recordBlock: (
           return withBreak(
             idx,
             <Box sx={{ [theme.breakpoints.only('xs')]: { width: 'calc(100% - 30px)' } }}>
-              <Typography sx={{ color: 'gray', mb: '30px', fontSize: '20px' }}>
+              <Typography sx={{ color: 'gray', mb: '10px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
               {recordBlock(sectionToRecordInputBlock(b), theme, { p: 0 })}
@@ -499,7 +500,7 @@ export const recordBlock: (
   });
 
   return (
-    <Box sx={mergeSx({ display: 'flex', flexWrap: 'wrap', m: '-15px' }, sx)}>
+    <Box sx={mergeSx({ display: 'flex', flexWrap: 'wrap', m: '-15px', my: 0 }, sx)}>
       {block.label &&
         withBreak(
           'title',

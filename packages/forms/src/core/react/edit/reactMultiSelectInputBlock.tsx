@@ -140,8 +140,16 @@ const DropdownMultiSelect = ({
         }
         MenuProps={{
           PaperProps: {
-            style: {
+            sx: {
               maxHeight: '300px',
+              '::-webkit-scrollbar': {
+                '-webkit-appearance': 'none',
+                width: '7px',
+              },
+              '::-webkit-scrollbar-thumb': {
+                borderRadius: '4px',
+                backgroundColor: 'rgba(0,0,0,.5)',
+              },
             },
           },
         }}
