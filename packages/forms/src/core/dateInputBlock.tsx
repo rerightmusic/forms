@@ -1,3 +1,4 @@
+import { toDate } from '../data';
 import { formatISO, isValid } from 'date-fns';
 import { right } from 'fp-ts/lib/Either';
 import { Dynamic, fromDyn, mapDynamic } from './dynamic';
@@ -59,7 +60,7 @@ export function date<R, Req extends boolean, V>(
 
   return new NestedInputBlock({
     calculateState: ({ seed, state }) => {
-      const date = state?.get.partialState || (seed ? new Date(seed) : null);
+      const date = state?.get.partialState || (seed ? toDate(seed) : null);
       const validation = getValidation(date);
       return {
         tag: 'InputState',

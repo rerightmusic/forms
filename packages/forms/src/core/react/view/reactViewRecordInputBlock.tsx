@@ -46,8 +46,7 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
       seed: value || null,
     });
     const [state, setState] = useState(initialState);
-    const [expanded, setExpanded] = useState({} as Record<string, ExpandedOption>);
-
+    const [expanded, setExpanded] = useState({} as Record<string, any>);
     const rec = block.apply.block({
       req: other as any,
       get: state,
@@ -62,7 +61,7 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
           </Typography>
         )}
         {props.afterTitle ? <Box sx={{ mb: '20px' }}>{props.afterTitle}</Box> : undefined}
-        {recordBlock(rec, theme, expanded, setExpanded)}
+        {recordBlock(rec, theme, { expanded, setExpanded })}
       </Box>
     );
   };
@@ -71,9 +70,8 @@ const ReactViewRecordInput = <R, S extends any[], V>(block: RecordNestedInputBlo
 export const recordBlock: (
   block: RecordInputBlock,
   theme: Theme,
-  expanded: Record<string, ExpandedOption>,
-  setExpanded: (e: Record<string, ExpandedOption>) => void
-) => JSX.Element = (block, theme, expanded, setExpanded) => {
+  expandedState: { expanded: Record<string, any>; setExpanded: (e: Record<string, any>) => void }
+) => JSX.Element = (block, theme, expandedState) => {
   const minWidth = '100px';
   const maxWidth = '400px';
   const els = block.blocks.flatMap((b, idx) => {
@@ -162,7 +160,11 @@ export const recordBlock: (
         );
 
       case 'RecordInputBlock':
-        return _withBreak(idx, recordBlock(b, theme, expanded, setExpanded), { my: 0 });
+        return _withBreak(
+          idx,
+          recordBlock(b, theme, expandedStateAtKey(expandedState, idx.toString())),
+          { my: 0 }
+        );
 
       case 'SectionInputBlock':
         return _withBreak(
@@ -172,11 +174,19 @@ export const recordBlock: (
               <Typography sx={{ color: 'gray', mb: '10px', fontSize: '20px' }}>
                 {b.title}
               </Typography>
-              {recordBlock(sectionToRecordInputBlock(b), theme, expanded, setExpanded)}
+              {recordBlock(
+                sectionToRecordInputBlock(b),
+                theme,
+                expandedStateAtKey(expandedState, idx.toString())
+              )}
               {b.opts?.divider !== false && <Divider sx={{ my: '30px' }} light />}
             </Box>
           ) : (
-            recordBlock(sectionToRecordInputBlock(b), theme, expanded, setExpanded)
+            recordBlock(
+              sectionToRecordInputBlock(b),
+              theme,
+              expandedStateAtKey(expandedState, idx.toString())
+            )
           ),
           {
             my: 0,
@@ -198,11 +208,11 @@ export const recordBlock: (
             >
               {!b.value || b.value.length === 0
                 ? value('-', { ml: '10px' })
-                : b.value?.map((v, idx) => {
+                : b.value?.map((v, idx_) => {
                     return (
                       <Paper
                         variant={b.outlined ? 'outlined' : 'elevation'}
-                        key={idx}
+                        key={idx_}
                         sx={{
                           p: '15px',
                           py: '5px',
@@ -213,8 +223,7 @@ export const recordBlock: (
                         {recordBlock(
                           b.template(v, () => {}),
                           theme,
-                          expanded,
-                          setExpanded
+                          expandedStateAtKey(expandedState, `${idx}_${idx_}`)
                         )}
                       </Paper>
                     );
@@ -243,8 +252,7 @@ export const recordBlock: (
                   {recordBlock(
                     b.template(b.value, () => {}),
                     theme,
-                    expanded,
-                    setExpanded
+                    expandedStateAtKey(expandedState, idx.toString())
                   )}
                 </Box>
               ) : (
@@ -310,8 +318,7 @@ export const recordBlock: (
                 {recordBlock(
                   b.template(b.value, () => {}),
                   theme,
-                  expanded,
-                  setExpanded
+                  expandedStateAtKey(expandedState, idx.toString())
                 )}
               </Modal>
             </Box>
@@ -471,13 +478,15 @@ export const recordBlock: (
                 }}
                 variant="outlined"
               >
-                {checkedOptions.map((x, idx) => (
+                {checkedOptions.map((x, idx_) => (
                   <OptionComponent
-                    key={idx}
+                    key={idx_}
                     option={x}
                     onChange={() => {}}
-                    onExpand={e => setExpanded({ ...expanded, [x.value]: e })}
-                    expanded={expanded[x.value]}
+                    onExpand={e =>
+                      expandedState.setExpanded({ ...expandedState.expanded, [idx_]: e })
+                    }
+                    expanded={expandedState.expanded[idx_]}
                     value={b.value}
                     level={0}
                     disableRipple={true}
@@ -486,13 +495,15 @@ export const recordBlock: (
               </Paper>
             ) : (
               <FormGroup sx={{ mt: '-5px' }}>
-                {b.options.map((x, idx) => (
+                {b.options.map((x, idx_) => (
                   <OptionComponent
-                    key={idx}
+                    key={idx_}
                     option={x}
                     onChange={() => {}}
-                    onExpand={e => setExpanded({ ...expanded, [x.value]: e })}
-                    expanded={expanded[x.value]}
+                    onExpand={e =>
+                      expandedState.setExpanded({ ...expandedState.expanded, [idx_]: e })
+                    }
+                    expanded={expandedState.expanded[idx_]}
                     value={b.value}
                     level={0}
                     disableRipple={true}
@@ -505,6 +516,14 @@ export const recordBlock: (
         );
       case 'Break':
         return <Box key={`${idx}_break`} sx={{ flexBasis: '100%', height: 0, mx: '15px' }} />;
+      case 'LabelledText':
+        return _addSpacing(
+          idx,
+          <Box sx={{ minWidth, maxWidth }}>
+            {label(b.label)}
+            {value(b.text)}
+          </Box>
+        );
       case 'DisplayText':
         return b.text
           ? _addSpacing(
@@ -576,6 +595,16 @@ export const recordBlock: (
       {els}
     </Box>
   );
+};
+
+const expandedStateAtKey = (
+  state: { expanded: Record<string, any>; setExpanded: (e: Record<string, any>) => void },
+  key: string
+) => {
+  return {
+    expanded: state.expanded[key] || {},
+    setExpanded: (s: any) => state.setExpanded({ [key]: s }),
+  };
 };
 
 const SearchWrapper = <T,>({

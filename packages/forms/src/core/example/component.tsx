@@ -50,6 +50,7 @@ const Example = () => {
             { id: '3', type: TagType.TypeC, tag: 'TagTypeC3' },
           ],
           record2: { record_field: 'b' },
+          date: '2022-01-25',
         }}
         submit={{
           footer: false,

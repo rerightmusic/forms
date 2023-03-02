@@ -401,7 +401,7 @@ export const recordBlock: (
         return reactBooleanInputBlock(b, idx);
 
       case 'RecordInputBlock':
-        return withBreak(idx, recordBlock(b, theme, { p: 0 }));
+        return withBreak(idx, recordBlock(b, theme, { p: 0 }), { my: 0 });
 
       case 'SectionInputBlock':
         if (b.title) {
@@ -452,6 +452,15 @@ export const recordBlock: (
 
       case 'Break':
         return <Box key={`${idx}_break`} sx={{ flexBasis: '100%', height: 0, mx: '15px' }} />;
+      case 'LabelledText':
+        return addSpacing(
+          idx,
+          <>
+            {label(b.label)}
+            {value(b.text)}
+          </>,
+          { my: '5px' }
+        );
       case 'DisplayText':
         return b.text
           ? addSpacing(idx, <Typography sx={{ fontSize: '13px' }}>{b.text}</Typography>)
@@ -514,5 +523,13 @@ export const recordBlock: (
     </Box>
   );
 };
+
+const label = (str: string) => (
+  <Typography sx={{ fontSize: '13px', color: 'gray', mb: '5px' }}>{str}</Typography>
+);
+
+const value = (v: string | null, sx?: SxProps<Theme>) => (
+  <Typography sx={{ fontSize: '16px', ...sx }}>{v || '-'}</Typography>
+);
 
 export default ReactEditRecordInputBlock;

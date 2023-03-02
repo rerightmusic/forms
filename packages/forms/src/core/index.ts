@@ -16,7 +16,7 @@ export { number, percentage100 } from './numberInputBlock';
 export { select } from './selectInputBlock';
 export { multiSelect } from './multiSelectInputBlock';
 export { search, emptySearch, type SearchValue } from './searchInputBlock';
-export { multiline, display, _break, heading2, button } from './outputBlock';
+export { multiline, labelledText, display, _break, heading2, button } from './outputBlock';
 export { record } from './record/recordInputBlock';
 export { dyn } from './dynamic';
 export { list } from './listInputBlock';

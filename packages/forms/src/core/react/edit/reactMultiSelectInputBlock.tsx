@@ -143,7 +143,7 @@ const DropdownMultiSelect = ({
             sx: {
               maxHeight: '300px',
               '::-webkit-scrollbar': {
-                '-webkit-appearance': 'none',
+                WebkitAppearance: 'none',
                 width: '7px',
               },
               '::-webkit-scrollbar-thumb': {

@@ -48,6 +48,9 @@ export type InputState<PS, V, Other> = {
 
 // TODO make the Type Shape thing nicer. Currently allows storing the Shape for Arrays and Object to avoid pushing
 // resolved records or arrays of records to the Type at typechecking time
+/**
+ * General Block type that all input blocks are created from
+ */
 export class NestedInputBlock<
   R,
   _Req extends boolean,
@@ -67,6 +70,14 @@ export class NestedInputBlock<
     readonly keys: string[] = []
   ) {}
 
+  // TODO this is problematic when used with the onChange prop. onChange returns the partial object
+  // as generated from traversing the object and extracting the leaf PartialState types.
+  // If this value is then passed as the seed to the form the PartialState type for the type that was
+  // mapped using this function won't match
+  /**
+   * Map seed type to another type such that the input can be populated from a different type
+   * than its default seed/partial type.
+   */
   mapSeed<P_>(f: (p: P_) => P) {
     return new NestedInputBlock<R, _Req, PS, P_, V, B, Other>(
       {
@@ -75,7 +86,7 @@ export class NestedInputBlock<
           this.apply.calculateState({
             req: props.req,
             state: props.state,
-            seed: props.seed ? f(props.seed) : null,
+            seed: props.seed !== null ? f(props.seed) : null,
           }),
       },
       this.keys

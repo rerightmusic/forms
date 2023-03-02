@@ -53,7 +53,7 @@ export function list<R extends object, Req extends boolean, S extends any[], V>(
   R,
   Req,
   RecordState<S, RecordValid<S>>[] | null,
-  RecordPartial<S>[],
+  RecordPartial<S>[] | null,
   V,
   ListInputBlock<S, V>,
   {},

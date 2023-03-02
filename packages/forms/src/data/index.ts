@@ -1,6 +1,7 @@
 export * from './object';
 export * from './string';
 export * from './enum';
+export * from './date';
 
 export const assertNever = (value: never, noThrow?: boolean): never => {
   if (noThrow) {

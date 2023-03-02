@@ -1,4 +1,10 @@
-export type OutputBlock = DisplayText | Break | MultilineText | Heading2 | Button;
+export type OutputBlock = LabelledText | DisplayText | Break | MultilineText | Heading2 | Button;
+
+export type LabelledText = {
+  tag: 'LabelledText';
+  label: string;
+  text: string;
+};
 
 export type DisplayText = {
   tag: 'DisplayText';
@@ -34,6 +40,14 @@ export const _break = () => {
   return {
     tag: 'Break',
   } as Break;
+};
+
+export const labelledText = (label: string, text: string) => {
+  return {
+    tag: 'LabelledText',
+    label,
+    text,
+  } as LabelledText;
 };
 
 export const display = (text: string) => {

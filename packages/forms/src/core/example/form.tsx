@@ -350,6 +350,10 @@ const Form = F.create()
     )
   )
   .add(
+    'date',
+    F.date('Date', v => v)
+  )
+  .add(
     'optional1',
     F.text('Optional', v => v)
   )

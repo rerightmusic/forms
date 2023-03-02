@@ -36,6 +36,9 @@ export const create = <R extends object = {}>() =>
     blocks: [],
   });
 
+/**
+ * Class that provides a nice DSL to build a record blocks
+ */
 export class RecordBlockBuilder<R extends object, E extends object, S extends any[]> {
   constructor(readonly apply: PartialRecordInputBlock<R, E, S>) {}
 
@@ -329,6 +332,11 @@ export class RecordBlockBuilder<R extends object, E extends object, S extends an
       );
     };
 
+    /**
+     * This function calculates the state for the record block by calling the underlying calculateState
+     * of all input blocks within it. This requires slicing the record state and passing to each block
+     * its state
+     */
     const calculateState = ({
       req,
       seed,
